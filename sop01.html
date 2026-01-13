@@ -5,212 +5,712 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Dashboard Operativa SOP 01</title>
 
+  <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
   <style>
-    :root{
-      --bg:#0b0f14;--card:#121925;--muted:#9fb0c3;--text:#e9f0f7;
-      --accent:#4dd4ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--line:#223044;
-    }
+    .weeklyWrap{margin-top:12px}
+    .weeklyHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .weeklyHeader .left{display:flex;flex-direction:column;gap:2px}
+    .weeklyHeader .left .sub{font-size:12px;color:var(--muted)}
+    .weeklyControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .weeklyTableWrap{margin-top:10px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:rgba(15,34,51,.35)}
+    table.weekly{width:100%;border-collapse:separate;border-spacing:0;min-width:980px}
+    table.weekly th, table.weekly td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:10px;vertical-align:top}
+    table.weekly th:last-child, table.weekly td:last-child{border-right:none}
+    table.weekly tr:last-child td{border-bottom:none}
+    table.weekly thead th{position:sticky;top:0;background:rgba(18,25,37,.92);backdrop-filter:blur(10px);z-index:2}
+    .slotHead{width:92px;color:var(--muted);font-weight:800;font-size:12px}
+    .dayHead{font-size:12px;font-weight:900;letter-spacing:.2px}
+    .cell{display:flex;flex-direction:column;gap:8px}
+    .channels{display:flex;gap:8px;flex-wrap:wrap}
+    .ch{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
+    .ch input{transform:scale(1.1);margin:0}
+    .ch b{color:var(--text);font-weight:900}
+    .cellNote{width:100%;min-height:38px;resize:vertical}
+    .miniBtn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-weight:750;font-size:12px}
+    .miniBtn:hover{filter:brightness(1.08)}
+    .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
+  </style>
+
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=70WoeJ_dtwIjN-wlANwV93G1brMjahMXAMcQ15cx1K2jzr1Sn53uUNpoLXt3RydmjTtVL-tC8tUnQCc6m2lhm1kPTgvCECui7NVaslEoFUs" charset="UTF-8"></script><style>
+    :root{--bg:#0b0f14;--card:#121925;--muted:#9fb0c3;--text:#e9f0f7;--accent:#4dd4ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--line:#223044;}
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      background:linear-gradient(180deg,#070a0f,#0b0f14);
-      color:var(--text)
-    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070a0f,#0b0f14);color:var(--text)}
     a{color:var(--accent);text-decoration:none}
     .wrap{max-width:1080px;margin:0 auto;padding:18px}
-
-    .topbar{
-      display:flex;gap:12px;align-items:center;justify-content:space-between;
-      flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);
-      background:rgba(18,25,37,.72);border-radius:14px;
-      box-shadow:0 8px 30px rgba(0,0,0,.35);
-      position:sticky;top:0;backdrop-filter:blur(10px);z-index:10
-    }
-    .title h1{font-size:16px;margin:0;font-weight:700}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);background:rgba(18,25,37,.72);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.35);position:sticky;top:0;backdrop-filter:blur(10px);z-index:10}
+    .title{display:flex;flex-direction:column;gap:2px}
+    .title h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
     .title .sub{font-size:12px;color:var(--muted)}
-
-    .pillrow{display:flex;gap:8px;flex-wrap:wrap}
-    .pill{
-      padding:8px 10px;border-radius:999px;
-      background:rgba(15,34,51,.9);border:1px solid var(--line);
-      font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center
-    }
-    .dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
-    .btn{
-      background:rgba(77,212,255,.16);
-      border:1px solid rgba(77,212,255,.35);
-      color:var(--text);padding:8px 10px;border-radius:10px;
-      cursor:pointer;font-weight:650;font-size:12px
-    }
+    .pillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{padding:8px 10px;border-radius:999px;background:rgba(15,34,51,.9);border:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
+    .btn{background:rgba(77,212,255,.16);border:1px solid rgba(77,212,255,.35);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:650;font-size:12px}
+    .btn:hover{filter:brightness(1.08)}
     .btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line)}
-
     .grid{display:grid;gap:12px;margin-top:12px}
-    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
-
-    .card{
-      background:rgba(18,25,37,.72);
-      border:1px solid var(--line);
-      border-radius:14px;padding:14px;
-      box-shadow:0 8px 30px rgba(0,0,0,.25)
-    }
-
-    .sectiontitle{display:flex;justify-content:space-between;align-items:center}
-    .badge{
-      font-size:12px;padding:6px 10px;border-radius:999px;
-      background:rgba(255,255,255,.06);border:1px solid var(--line);
-      color:var(--muted)
-    }
-
+    @media (min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
+    .card{background:rgba(18,25,37,.72);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+    .card h2{margin:0 0 8px 0;font-size:14px}
+    .muted{color:var(--muted);font-size:12px;line-height:1.4}
+    .sectiontitle{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .badge{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)}
     .timeline{display:grid;gap:10px;margin-top:10px}
-    .block{
-      border:1px solid var(--line);
-      border-radius:12px;padding:12px;
-      background:rgba(15,34,51,.55)
-    }
+    .block{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(15,34,51,.55)}
+    .blockhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
     .blockname{font-weight:750;font-size:13px}
     .time{font-size:12px;color:var(--muted)}
-
+    .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{background:rgba(15,34,51,.9);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+    .chip strong{color:var(--text);font-weight:800}
     .checklist{display:grid;gap:8px;margin-top:10px}
-    .task{
-      display:flex;gap:10px;padding:10px;
-      border-radius:12px;border:1px solid var(--line);
-      background:rgba(0,0,0,.12)
-    }
+    .task{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.12)}
+    .task input{margin-top:2px;transform:scale(1.15)}
+    .task .tmain{display:flex;flex-direction:column;gap:2px}
+    .task .tlabel{font-size:13px;font-weight:650}
+    .task .tdesc{font-size:12px;color:var(--muted);line-height:1.35}
     .task.done{opacity:.75}
     .task.done .tlabel{text-decoration:line-through}
-
     .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .row>*{flex:1 1 220px}
+    .row > *{flex:1 1 220px}
+    .field{display:flex;flex-direction:column;gap:6px}
     .field label{font-size:12px;color:var(--muted)}
-    input,select{
-      width:100%;background:rgba(0,0,0,.2);
-      border:1px solid var(--line);
-      color:var(--text);border-radius:12px;padding:10px
-    }
-
+    input[type="text"],input[type="number"],textarea,select{width:100%;background:rgba(0,0,0,.2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px;outline:none}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+    details{border:1px solid var(--line);border-radius:14px;background:rgba(15,34,51,.45);padding:10px 12px}
+    details summary{cursor:pointer;font-weight:800;font-size:13px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    details summary::-webkit-details-marker{display:none}
+    .accordionContent{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.55}
+    .accordionContent pre{white-space:pre-wrap;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--text)}
+    .timer{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .clock{font-size:22px;font-weight:900;letter-spacing:.5px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.22)}
+    .mini{font-size:12px;color:var(--muted)}
+    .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+    .table th,.table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
+    .table th{color:var(--muted);font-weight:800}
     .footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
   </style>
 </head>
-
 <body>
 <div class="wrap">
 
-  <div class="topbar">
-    <div class="title">
-      <h1>Dashboard Operativa — SOP 01</h1>
-      <div class="sub">
-        09:00 Presidio · 09:30–12:30 Acquisizione · 15:30–18:30 Follow-up · 18:30 Pianificazione
+  <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
+  <div class="card weeklyWrap" id="weeklyPlannerCard">
+    <div class="weeklyHeader">
+      <div class="left">
+        <h2 style="margin:0;font-size:14px">Schema Settimanale Social (Lun → Dom)</h2>
+        <div class="sub" id="weekLabel">Settimana:</div>
+      </div>
+      <div class="weeklyControls">
+        <button class="miniBtn" id="resetWeekBtn">Reset settimana</button>
+        <button class="miniBtn" id="toggleNotesBtn">Mostra/Nascondi note</button>
       </div>
     </div>
+    <div class="hintLine" style="margin-top:8px">
+      Spunta i canali per ogni fascia oraria. Dati salvati in locale (localStorage) per settimana.
+    </div>
 
+    <div class="weeklyTableWrap">
+      <table class="weekly" id="weeklyTable">
+        <thead id="weeklyThead"></thead>
+        <tbody id="weeklyTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="title">
+      <h1>Dashboard Operativa — SOP 01 (v1.4)</h1>
+      <div class="sub">09:00 Presidio+PDF → 09:30–12:30 Acquisizione → 15:30–18:30 Follow-up → 18:30–19:00 Pianificazione</div>
+    </div>
     <div class="pillrow">
-      <div class="pill"><span class="dot" id="dayDot"></span><span id="todayLabel"></span></div>
-      <div class="pill">Stato: <strong id="dayState">NON COMPLETATO</strong></div>
-      <button class="btn secondary" onclick="resetToday()">Reset giornata</button>
+      <div class="pill"><span class="dot" id="dayDot"></span><span id="todayLabel">Data</span></div>
+      <div class="pill"><span>Stato giorno:</span> <strong id="dayState">NON COMPLETATO</strong></div>
+      <button class="btn secondary" id="resetDayBtn">Reset giornata</button>
+      <button class="btn" id="exportBtn">Esporta contatti (.csv)</button>
     </div>
   </div>
 
   <div class="grid">
     <div class="card">
       <div class="sectiontitle">
-        <h2 style="font-size:14px">Checklist Operativa</h2>
-        <span class="badge">Obbligatoria</span>
+        <h2>Organigramma orario 09:00–19:00</h2>
+        <span class="badge">Checklist + timer + KPI</span>
       </div>
+      <div class="muted">Spunta tutto. I dati restano salvati sul dispositivo (localStorage).</div>
 
-      <div class="checklist" id="checklist"></div>
+      <div class="timeline">
+        <div class="block">
+          <div class="blockhead">
+            <div>
+              <div class="blockname">Avvio — Presidio Digitale + Sistema PDF</div>
+              <div class="time">09:00 – 09:30 · SOP Cap. 0 + 0A</div>
+            </div>
+            <div class="kpis">
+              <div class="chip">Target <strong>4–8 contenuti</strong></div>
+              <div class="chip">Obiettivo <strong>visibilità+contatti</strong></div>
+            </div>
+          </div>
+          <div class="checklist" id="cl_social"></div>
+          <div class="row">
+            <div class="field"><label>Contenuti pubblicati oggi (#)</label><input type="number" min="0" id="kpi_posts" /></div>
+            <div class="field"><label>Richieste PDF oggi (#)</label><input type="number" min="0" id="kpi_pdf_requests" /></div>
+          </div>
+        </div>
+
+        <div class="block">
+          <div class="blockhead">
+            <div>
+              <div class="blockname">Core — Acquisizione (Mattino)</div>
+              <div class="time">09:30 – 12:30 · SOP Cap. 2.1 + Cap. 4</div>
+            </div>
+            <div class="kpis">
+              <div class="chip">Target <strong>30–40 contatti</strong></div>
+              <div class="chip">Regola <strong>1 fonte/sessione</strong></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Fonte del giorno</label>
+              <select id="morning_source">
+                <option value="">Seleziona…</option><option>AMV</option><option>AV</option><option>TMK TOP</option><option>VDP</option><option>WARM (rete calda)</option><option>PDF Leads (Cap. 0A)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Script usato</label>
+              <select id="morning_script">
+                <option value="">Seleziona…</option><option>Script 01 — Freddo base</option><option>Script 02 — AMV</option><option>Script 03 — AV</option><option>Script 04 — TMK TOP</option><option>Script 05 — VDP</option><option>Script 06 — Rete calda</option>
+              </select>
+            </div>
+            <div class="field"><label>Contatti mattino (#)</label><input type="number" min="0" id="kpi_morning_contacts" /></div>
+          </div>
+
+          <div class="hr"></div>
+          <div class="sectiontitle"><h2 style="margin:0;font-size:13px">Timer sessioni 50/10</h2><span class="badge">Focus → Pausa</span></div>
+          <div class="timer">
+            <div class="clock" id="clock">50:00</div>
+            <div>
+              <div class="mini" id="timerMode">Pronto (Focus 50')</div>
+              <div class="mini">Avvia Focus, poi Pausa. Ripeti 2 volte.</div>
+            </div>
+            <button class="btn" id="startFocusBtn">Avvia Focus</button>
+            <button class="btn secondary" id="startBreakBtn">Avvia Pausa</button>
+            <button class="btn secondary" id="stopBtn">Stop</button>
+          </div>
+
+          <div class="checklist" id="cl_morning"></div>
+        </div>
+
+        <div class="block">
+          <div class="blockhead">
+            <div>
+              <div class="blockname">Monetizzazione — Follow-up + Appuntamenti</div>
+              <div class="time">15:30 – 18:30 · SOP Cap. 2.2 + Cap. 7</div>
+            </div>
+            <div class="kpis">
+              <div class="chip">Target <strong>10–20 follow-up</strong></div>
+              <div class="chip">Focus <strong>avanzare relazioni</strong></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field"><label>Follow-up completati (#)</label><input type="number" min="0" id="kpi_followups" /></div>
+            <div class="field"><label>Appuntamenti fissati (#)</label><input type="number" min="0" id="kpi_appointments" /></div>
+            <div class="field"><label>Note operative</label><input type="text" id="afternoon_notes" placeholder="1–3 righe" /></div>
+          </div>
+
+          <div class="checklist" id="cl_afternoon"></div>
+        </div>
+
+        <div class="block">
+          <div class="blockhead">
+            <div>
+              <div class="blockname">Chiusura — Pianificazione domani</div>
+              <div class="time">18:30 – 19:00 · SOP Cap. 3.1</div>
+            </div>
+            <div class="kpis">
+              <div class="chip">Regola <strong>domani già deciso</strong></div>
+              <div class="chip">Output <strong>liste+script</strong></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Fonte domani (UNA)</label>
+              <select id="tomorrow_source">
+                <option value="">Seleziona…</option><option>AMV</option><option>AV</option><option>TMK TOP</option><option>VDP</option><option>WARM (rete calda)</option><option>PDF Leads (Cap. 0A)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Script domani</label>
+              <select id="tomorrow_script">
+                <option value="">Seleziona…</option><option>Script 01 — Freddo base</option><option>Script 02 — AMV</option><option>Script 03 — AV</option><option>Script 04 — TMK TOP</option><option>Script 05 — VDP</option><option>Script 06 — Rete calda</option>
+              </select>
+            </div>
+            <div class="field"><label>Lista contatti domani (note)</label><input type="text" id="tomorrow_list" /></div>
+          </div>
+
+          <div class="checklist" id="cl_planning"></div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
-      <div class="sectiontitle">
-        <h2 style="font-size:14px">Pianificazione Domani</h2>
-        <span class="badge">SOP</span>
+      <div class="sectiontitle"><h2>PDF/Database + SOP integrale</h2><span class="badge">Offline · localStorage</span></div>
+      <div class="muted">Salva lead (Cap. 0A), genera caption e consulta SOP integrale.</div>
+
+      <div class="hr"></div>
+
+      <h2 style="font-size:13px;margin:0 0 8px">Lead PDF (Cap. 0A)</h2>
+      <div class="row">
+        <div class="field"><label>Titolo PDF</label><input type="text" id="pdf_title" placeholder="Es: Checklist venditore"/></div>
+        <div class="field"><label>Link PDF</label><input type="text" id="pdf_link" placeholder="https://.../pdf.pdf"/></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Telefono contatto</label><input type="text" id="lead_phone" placeholder="+39..."/></div>
+        <div class="field">
+          <label>Consenso (obbligatorio)</label>
+          <select id="lead_consent"><option value="no">NO</option><option value="si">SÌ — autorizza a ricevere materiale informativo e promozionale</option></select>
+        </div>
+      </div>
+      <button class="btn" id="saveLeadBtn">Salva lead</button>
+      <button class="btn secondary" id="genCaptionBtn">Genera caption (post)</button>
+
+      <div class="task" style="margin-top:10px">
+        <input type="checkbox" disabled checked>
+        <div class="tmain">
+          <div class="tlabel">Dicitura consenso (GDPR)</div>
+          <div class="tdesc">“Autorizzo al trattamento dei miei dati personali e a ricevere materiale informativo e promozionale ai sensi del Regolamento UE 679/2016 (GDPR).”</div>
+        </div>
       </div>
 
-      <div class="row">
-        <div class="field">
-          <label>Fonte domani</label>
-          <input id="tomorrow_source" placeholder="Una sola fonte" />
-        </div>
-        <div class="field">
-          <label>Script</label>
-          <input id="tomorrow_script" placeholder="Script definito" />
-        </div>
-      </div>
+      <div class="task" id="captionBox" style="display:none; margin-top:10px"></div>
+
+      <div class="hr"></div>
+
+      <h2 style="font-size:13px;margin:0 0 8px">Ultimi contatti salvati (locale)</h2>
+      <table class="table" id="leadsTable">
+        <thead><tr><th>Telefono</th><th>Consenso</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="hr"></div>
+
+      <details open>
+        <summary><span>SOP 01 — Testo integrale (v1.4)</span><span class="badge">accordion</span></summary>
+        <div class="accordionContent" id="sopText"></div>
+      </details>
     </div>
   </div>
 
-  <div class="footer">
-    SOP 01 — Dashboard operativa offline · dati salvati nel browser
-  </div>
-
+  <div class="footer">Dashboard SOP — offline, dati salvati sul dispositivo.</div>
 </div>
 
+<!-- === MIGLIORIA IN ALTO: JS Planner Settimanale Social (Lun–Dom) === -->
 <script>
-  const KEY="sop01_state";
-  const today=new Date().toISOString().slice(0,10);
-
-  const TASKS=[
-    "Presidio digitale effettuato",
-    "Contenuti pubblicati",
-    "Richieste gestite",
-    "Acquisizione mattino completata",
-    "Follow-up pomeriggio completati",
-    "Pianificazione domani completata"
+(function(){
+  const WEEKLY_KEY = "weekly_social_planner_v1";
+  const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+  const SLOTS = ["08:00","10:00","12:00","14:00","16:00","18:00","20:00"];
+  const CHANNELS = [
+    { id:"fb",  label:"FB" },
+    { id:"ig",  label:"IG" },
+    { id:"tt",  label:"TT" },
+    { id:"yt",  label:"YT" },
   ];
 
-  function load(){
-    return JSON.parse(localStorage.getItem(KEY)||"{}")[today]||{};
+  function getMonday(d){
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    date.setDate(date.getDate() + diff);
+    date.setHours(0,0,0,0);
+    return date;
   }
-  function save(state){
-    const all=JSON.parse(localStorage.getItem(KEY)||"{}");
-    all[today]=state;
-    localStorage.setItem(KEY,JSON.stringify(all));
+  function isoDate(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${dd}`;
+  }
+  function weekKey(){ return isoDate(getMonday(new Date())); }
+
+  function loadWeek(){
+    try{
+      const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
+      return all[weekKey()] || {};
+    }catch(e){ return {}; }
+  }
+  function saveWeek(state){
+    const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
+    all[weekKey()] = state;
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify(all));
+  }
+  function resetWeek(){
+    const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
+    delete all[weekKey()];
+    localStorage.setItem(WEEKLY_KEY, JSON.stringify(all));
   }
 
-  function render(){
-    const state=load();
-    const box=document.getElementById("checklist");
-    box.innerHTML="";
-    let done=0;
+  function el(id){ return document.getElementById(id); }
 
-    TASKS.forEach((t,i)=>{
-      const id="t"+i;
-      if(state[id]) done++;
-      const div=document.createElement("div");
-      div.className="task"+(state[id]?" done":"");
-      div.innerHTML=`
-        <input type="checkbox" ${state[id]?"checked":""}>
-        <div>
-          <div class="tlabel">${t}</div>
-        </div>`;
-      div.querySelector("input").onchange=e=>{
-        state[id]=e.target.checked;
-        save(state);
-        render();
-      };
-      box.appendChild(div);
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function renderPlanner(){
+    const thead = el("weeklyThead");
+    const tbody = el("weeklyTbody");
+    if(!thead || !tbody) return;
+
+    const monday = getMonday(new Date());
+    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+
+    const label = el("weekLabel");
+    if(label){
+      label.textContent = `Settimana: ${monday.toLocaleDateString("it-IT")} → ${sunday.toLocaleDateString("it-IT")} (chiave: ${weekKey()})`;
+    }
+
+    const state = loadWeek();
+    const showNotes = state.__showNotes !== false;
+
+    thead.innerHTML = "";
+    const trh = document.createElement("tr");
+    trh.innerHTML = `<th class="slotHead">Orario</th>` + DAYS.map(d => `<th><div class="dayHead">${d}</div></th>`).join("");
+    thead.appendChild(trh);
+
+    tbody.innerHTML = "";
+    SLOTS.forEach(slot => {
+      const tr = document.createElement("tr");
+      const tds = [];
+      tds.push(`<td class="slotHead">${slot}</td>`);
+
+      for(let dayIdx=0; dayIdx<7; dayIdx++){
+        const day = DAYS[dayIdx];
+
+        const checks = CHANNELS.map(ch => {
+          const key = `${day}|${slot}|${ch.id}`;
+          const checked = state[key] ? "checked" : "";
+          return `
+            <label class="ch">
+              <input type="checkbox" data-wkey="${key}" ${checked}>
+              <b>${ch.label}</b>
+            </label>
+          `;
+        }).join("");
+
+        const noteKey = `${day}|${slot}|note`;
+        const noteVal = (state[noteKey] ?? "");
+        const noteHtml = showNotes ? `
+          <textarea class="cellNote" placeholder="Nota (es: Natale / 8 dicembre / tema...)" data-nkey="${noteKey}">${escapeHtml(noteVal)}</textarea>
+        ` : ``;
+
+        tds.push(`
+          <td>
+            <div class="cell">
+              <div class="channels">${checks}</div>
+              ${noteHtml}
+            </div>
+          </td>
+        `);
+      }
+
+      tr.innerHTML = tds.join("");
+      tbody.appendChild(tr);
     });
 
-    document.getElementById("dayState").textContent=
-      done===TASKS.length ? "COMPLETATO" : done>0 ? "IN CORSO" : "NON COMPLETATO";
-    document.getElementById("dayDot").style.background=
-      done===TASKS.length ? "var(--good)" : done>0 ? "var(--warn)" : "var(--bad)";
-  }
+    tbody.querySelectorAll('input[type="checkbox"][data-wkey]').forEach(cb => {
+      cb.addEventListener("change", () => {
+        const s = loadWeek();
+        s[cb.dataset.wkey] = cb.checked;
+        saveWeek(s);
+      });
+    });
 
-  function resetToday(){
-    if(confirm("Azzerare solo la giornata di oggi?")){
-      const all=JSON.parse(localStorage.getItem(KEY)||"{}");
-      delete all[today];
-      localStorage.setItem(KEY,JSON.stringify(all));
-      render();
+    tbody.querySelectorAll('textarea[data-nkey]').forEach(tx => {
+      tx.addEventListener("input", () => {
+        const s = loadWeek();
+        s[tx.dataset.nkey] = tx.value;
+        saveWeek(s);
+      });
+    });
+
+    const toggleBtn = el("toggleNotesBtn");
+    if(toggleBtn){
+      toggleBtn.textContent = showNotes ? "Nascondi note" : "Mostra note";
+      toggleBtn.onclick = () => {
+        const s = loadWeek();
+        s.__showNotes = !(s.__showNotes !== false);
+        saveWeek(s);
+        renderPlanner();
+      };
+    }
+
+    const resetBtn = el("resetWeekBtn");
+    if(resetBtn){
+      resetBtn.onclick = () => {
+        if(confirm("Vuoi azzerare SOLO la settimana corrente del planner? (non tocca la SOP giornaliera né i lead)")){
+          resetWeek();
+          renderPlanner();
+        }
+      };
     }
   }
 
-  document.getElementById("todayLabel").textContent=
-    new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  window.addEventListener("DOMContentLoaded", renderPlanner);
+})();
+</script>
 
-  render();
+<script>
+const STORAGE_KEY="sop_dashboard_v1";
+const LEADS_KEY="sop_leads_v1";
+
+function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function loadState(){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");return all[todayKey()]||{};}
+function saveState(state){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");all[todayKey()]=state;localStorage.setItem(STORAGE_KEY,JSON.stringify(all));}
+function resetToday(){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");delete all[todayKey()];localStorage.setItem(STORAGE_KEY,JSON.stringify(all));}
+
+function loadLeads(){return JSON.parse(localStorage.getItem(LEADS_KEY)||"[]");}
+function saveLeads(leads){localStorage.setItem(LEADS_KEY,JSON.stringify(leads));}
+
+const todayLabel=document.getElementById("todayLabel");
+const dayState=document.getElementById("dayState");
+const dayDot=document.getElementById("dayDot");
+
+const fields={
+  kpi_posts:document.getElementById("kpi_posts"),
+  kpi_pdf_requests:document.getElementById("kpi_pdf_requests"),
+  morning_source:document.getElementById("morning_source"),
+  morning_script:document.getElementById("morning_script"),
+  kpi_morning_contacts:document.getElementById("kpi_morning_contacts"),
+  kpi_followups:document.getElementById("kpi_followups"),
+  kpi_appointments:document.getElementById("kpi_appointments"),
+  afternoon_notes:document.getElementById("afternoon_notes"),
+  tomorrow_source:document.getElementById("tomorrow_source"),
+  tomorrow_script:document.getElementById("tomorrow_script"),
+  tomorrow_list:document.getElementById("tomorrow_list"),
+  pdf_title:document.getElementById("pdf_title"),
+  pdf_link:document.getElementById("pdf_link"),
+};
+
+const CL={
+  social:[
+    {id:"social_0",label:"Controllo gruppi (Facebook/zone)",desc:"Apri i gruppi locali e verifica regole/post rilevanti."},
+    {id:"social_1",label:"Pubblica 2–3 contenuti (inizio giornata)",desc:"News / problema / opportunità / immobile. Utili, non commerciali."},
+    {id:"social_2",label:"Inserisci link PDF nei post dove serve",desc:"Post utile → link PDF (Cap. 0A)."},
+    {id:"social_3",label:"Rispondi a commenti informativi",desc:"Ringrazia, chiarisci, nessuna vendita nei commenti."},
+    {id:"social_4",label:"Gestisci richieste PDF arrivate",desc:"Salva lead + invia PDF in modo pulito (no proposta commerciale)."},
+  ],
+  morning:[
+    {id:"morning_0",label:"Allineamento (fonte+script+obiettivo)",desc:"Una sola fonte e uno script per sessione."},
+    {id:"morning_1",label:"Sessione 1 completata (50/10)",desc:"Focus pieno. Zero distrazioni."},
+    {id:"morning_2",label:"Registrazione dati (intermedia)",desc:"Esiti + info chiave + next action."},
+    {id:"morning_3",label:"Sessione 2 completata (50/10)",desc:"Stessa disciplina. Una fonte."},
+    {id:"morning_4",label:"Chiusura mattino: CRM pulito",desc:"Tutto registrato. Nessun contatto ‘in testa’."},
+  ],
+  afternoon:[
+    {id:"afternoon_0",label:"Riattivazione: priorità follow-up",desc:"Ordina per urgenza e valore."},
+    {id:"afternoon_1",label:"Follow-up strutturati completati",desc:"Richiamate promesse + contatti caldi + lead PDF."},
+    {id:"afternoon_2",label:"Appuntamenti / trattative",desc:"Valutazioni, visite, call. Aggiorna pipeline."},
+    {id:"afternoon_3",label:"Amministrazione e sistema",desc:"Documenti, CRM, pulizia."},
+  ],
+  planning:[
+    {id:"planning_0",label:"Seleziona fonte domani (UNA)",desc:"Niente indecisione domani mattina."},
+    {id:"planning_1",label:"Seleziona script domani",desc:"Script approvato. Nessuna improvvisazione."},
+    {id:"planning_2",label:"Prepara lista contatti",desc:"Lista pronta (numeri, nominativi, criteri)."},
+    {id:"planning_3",label:"Task/Note impostate",desc:"Domani parte senza attrito."},
+  ]
+};
+
+
+/* IMPLEMENTA: link cliccabile nella sezione "Pubblica 2–3 contenuti (inizio giornata)" */
+(function(){
+  try{
+    const t = (CL && CL.social) ? CL.social.find(x=>x.id==="social_1") : null;
+    if(t){
+      t.desc = t.desc + ` <a href="https://chatgpt.com/c/696505a9-14f0-8328-b3ab-09a7181d5a81" target="_blank" rel="noopener">Apri link</a>`;
+    }
+  }catch(e){}
+})();
+
+function renderChecklist(containerId, items, state){
+  const c=document.getElementById(containerId); c.innerHTML="";
+  items.forEach(it=>{
+    const el=document.createElement("div");
+    el.className="task"+(state[it.id]?" done":"");
+    el.innerHTML=`<input type="checkbox" ${state[it.id]?"checked":""}><div class="tmain"><div class="tlabel">${it.label}</div><div class="tdesc">${it.desc}</div></div>`;
+    const cb=el.querySelector("input");
+    cb.addEventListener("change",()=>{
+      const s=loadState(); s[it.id]=cb.checked; saveState(s); applyStateToUI();
+    });
+    c.appendChild(el);
+  });
+}
+
+function bindField(key){
+  const el=fields[key];
+  el.addEventListener("input",()=>{
+    const s=loadState(); s[key]=el.value; saveState(s); applyStateToUI();
+  });
+}
+
+function applyStateToUI(){
+  const s=loadState();
+  Object.keys(fields).forEach(k=>{fields[k].value = (s[k] ?? "");});
+
+  renderChecklist("cl_social",CL.social,s);
+  renderChecklist("cl_morning",CL.morning,s);
+  renderChecklist("cl_afternoon",CL.afternoon,s);
+  renderChecklist("cl_planning",CL.planning,s);
+
+  const must=[
+    "social_0","social_1","social_2","social_3","social_4",
+    "morning_0","morning_1","morning_2","morning_3","morning_4",
+    "afternoon_0","afternoon_1","afternoon_2",
+    "planning_0","planning_1","planning_2"
+  ];
+  const done=must.filter(k=>s[k]).length, total=must.length;
+
+  let stateText="NON COMPLETATO", dot="var(--bad)";
+  if(done===total){stateText="COMPLETATO"; dot="var(--good)";}
+  else if(done>=Math.floor(total*0.6)){stateText="IN CORSO"; dot="var(--warn)";}
+  dayState.textContent=stateText; dayDot.style.background=dot;
+
+  renderLeads();
+}
+
+function setDateHeader(){
+  const d=new Date();
+  todayLabel.textContent=d.toLocaleDateString("it-IT",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+}
+
+/* Leads */
+const saveLeadBtn=document.getElementById("saveLeadBtn");
+const genCaptionBtn=document.getElementById("genCaptionBtn");
+const leadPhone=document.getElementById("lead_phone");
+const leadConsent=document.getElementById("lead_consent");
+const captionBox=document.getElementById("captionBox");
+
+saveLeadBtn.addEventListener("click",()=>{
+  const phone=leadPhone.value.trim();
+  const consent = leadConsent.value==="si";
+  if(!phone){alert("Inserisci il telefono.");return;}
+  if(!consent){alert("Consenso obbligatorio per salvare il contatto.");return;}
+  const leads=loadLeads();
+  if(!leads.some(l=>l.phone===phone)){
+    leads.unshift({phone,consent:true,date:new Date().toISOString()});
+    saveLeads(leads);
+  }
+  leadPhone.value="";
+  renderLeads();
+  alert("Lead salvato in locale.");
+});
+
+genCaptionBtn.addEventListener("click",()=>{
+  const title=(fields.pdf_title.value||"PDF gratuito").trim();
+  const link=(fields.pdf_link.value||"INSERISCI_LINK_PDF").trim();
+  const cap=`📘 PDF GRATUITO — ${title}
+
+Documento pratico, semplice e utile.
+
+👉 Scaricalo qui:
+${link}
+
+✅ Nessuna vendita forzata.
+
+Per ricevere materiale informativo e promozionale è richiesto consenso (GDPR).`;
+  captionBox.style.display="flex";
+  captionBox.innerHTML=`<div class="tmain"><div class="tlabel">Caption pronta</div><div class="tdesc"><pre style="margin:8px 0 0;white-space:pre-wrap">${cap}</pre></div></div>`;
+});
+
+function renderLeads(){
+  const tbody=document.querySelector("#leadsTable tbody");
+  tbody.innerHTML="";
+  loadLeads().slice(0,25).forEach(l=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${escapeHtml(l.phone)}</td><td>${l.consent?"SÌ":"NO"}</td><td>${new Date(l.date).toLocaleString("it-IT")}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+/* Export */
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const leads=loadLeads();
+  const rows=[["phone","consent","date"],...leads.map(l=>[l.phone,l.consent?"yes":"no",l.date])];
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=`leads_${todayKey()}.csv`; a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* Reset day */
+document.getElementById("resetDayBtn").addEventListener("click",()=>{
+  if(confirm("Vuoi azzerare solo la giornata di oggi (checklist+campi)? I contatti restano.")){resetToday();applyStateToUI();}
+});
+
+/* Timer 50/10 */
+const clock=document.getElementById("clock");
+const timerMode=document.getElementById("timerMode");
+let timer=null, remaining=50*60, mode="focus";
+function setClock(sec){const m=Math.floor(sec/60), s=sec%60; clock.textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");}
+function stop(){if(timer){clearInterval(timer);timer=null;} timerMode.textContent=(mode==="focus")?"Pronto (Focus 50')":"Pronto (Pausa 10')";}
+function start(sec,newMode){
+  stop(); remaining=sec; mode=newMode;
+  timerMode.textContent=(mode==="focus")?"In corso (Focus 50')":"In corso (Pausa 10')";
+  setClock(remaining);
+  timer=setInterval(()=>{remaining--; setClock(remaining); if(remaining<=0){stop(); alert(mode==="focus"?"Fine Focus! Fai 10 minuti di pausa.":"Fine Pausa! Torna al Focus.");}},1000);
+}
+document.getElementById("startFocusBtn").addEventListener("click",()=>start(50*60,"focus"));
+document.getElementById("startBreakBtn").addEventListener("click",()=>start(10*60,"break"));
+document.getElementById("stopBtn").addEventListener("click",()=>stop());
+setClock(50*60);
+
+/* SOP text */
+document.getElementById("sopText").innerHTML = `<pre>
+SOP 01 — SISTEMA OPERATIVO DI ACQUISIZIONE IMMOBILIARE (Versione 1.4)
+
+CAPITOLO 0 — PRESIDIO DIGITALE E POSIZIONAMENTO NON INVASIVO
+0.1 OBIETTIVO: presenza, network, contenuti utili, credibilità.
+0.2 PRINCIPI: farsi vedere prima, dare valore, no vendita diretta.
+0.3 GRUPPI: iscrizione e condivisione nel rispetto regole.
+0.4 NETWORK: richieste graduali, no messaggi commerciali immediati.
+0.5 CONTENUTI: 4–8/giorno (news, immobile, problemi, opportunità, contesto).
+0.6 STILE: semplice, umano; vietati slogan/promesse.
+0.7 INTERAZIONE: rispondere e chiarire; vietata vendita.
+0.8 REGOLA: Prima ti vedono. Poi ti ascoltano. Solo dopo si fidano.
+
+CAPITOLO 0A — PDF UTILI + DATABASE PROPRIETARIO
+0A.1 OBIETTIVO: trasformare contenuti in contatti, creare database.
+0A.2 PRINCIPI: valore prima del numero; consenso obbligatorio.
+0A.3 STRUMENTO: PDF utili; vietati PDF promozionali diretti.
+0A.4 FLUSSO: post→link→numero+consenso→memorizza.
+0A.5 INVIO: WhatsApp; nessuna proposta commerciale nel primo invio.
+0A.6 FUTURO: invii successivi senza richiedere numero; caption standard.
+0A.7 CONSENSO: dicitura GDPR obbligatoria.
+0A.8 REGOLA: senza valore niente numero; senza numero niente contatto; senza database niente continuità.
+
+CAPITOLO 1 — OBIETTIVO SOP: opportunità quotidiane; standard; misurazione; centralizzazione.
+CAPITOLO 2 — PRINCIPI: parlare con persone; routine; tecnologia supporta.
+2.1 Mattino: acquisizione; script obbligatori; nessuna improvvisazione.
+2.2 Pomeriggio: follow-up/gestione/appuntamenti; vietato freddo.
+CAPITOLO 3 — STRUTTURA: pianificazione serale; fasce orarie.
+CAPITOLO 4 — MATTINO: 2 sessioni 50/10; una fonte; registrazione.
+CAPITOLO 6 — DATABASE: next action obbligatoria; non registrato = inesistente.
+CAPITOLO 7 — POMERIGGIO: follow-up; appuntamenti; admin; pianificazione.
+CAPITOLO 8 — KPI: contatti, follow-up, appuntamenti, db aggiornato.
+CAPITOLO 9 — NON CONFORMITÀ: saltare mattino, non registrare, non pianificare.
+CAPITOLO 10 — RESPONSABILITÀ: esecuzione e verifica.
+CAPITOLO 11 — REGOLA FINALE: Se non fai la domanda, non stai acquisendo.
+</pre>`;
+
+setDateHeader();
+Object.keys(fields).forEach(bindField);
+applyStateToUI();
 </script>
 </body>
 </html>
