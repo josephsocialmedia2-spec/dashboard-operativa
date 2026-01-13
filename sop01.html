@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Dashboard Operativa SOP 01</title>
+
+  <style>
+    :root{
+      --bg:#0b0f14;--card:#121925;--muted:#9fb0c3;--text:#e9f0f7;
+      --accent:#4dd4ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--line:#223044;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#070a0f,#0b0f14);
+      color:var(--text)
+    }
+    a{color:var(--accent);text-decoration:none}
+    .wrap{max-width:1080px;margin:0 auto;padding:18px}
+
+    .topbar{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);
+      background:rgba(18,25,37,.72);border-radius:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+      position:sticky;top:0;backdrop-filter:blur(10px);z-index:10
+    }
+    .title h1{font-size:16px;margin:0;font-weight:700}
+    .title .sub{font-size:12px;color:var(--muted)}
+
+    .pillrow{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{
+      padding:8px 10px;border-radius:999px;
+      background:rgba(15,34,51,.9);border:1px solid var(--line);
+      font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center
+    }
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+    .btn{
+      background:rgba(77,212,255,.16);
+      border:1px solid rgba(77,212,255,.35);
+      color:var(--text);padding:8px 10px;border-radius:10px;
+      cursor:pointer;font-weight:650;font-size:12px
+    }
+    .btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line)}
+
+    .grid{display:grid;gap:12px;margin-top:12px}
+    @media(min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
+
+    .card{
+      background:rgba(18,25,37,.72);
+      border:1px solid var(--line);
+      border-radius:14px;padding:14px;
+      box-shadow:0 8px 30px rgba(0,0,0,.25)
+    }
+
+    .sectiontitle{display:flex;justify-content:space-between;align-items:center}
+    .badge{
+      font-size:12px;padding:6px 10px;border-radius:999px;
+      background:rgba(255,255,255,.06);border:1px solid var(--line);
+      color:var(--muted)
+    }
+
+    .timeline{display:grid;gap:10px;margin-top:10px}
+    .block{
+      border:1px solid var(--line);
+      border-radius:12px;padding:12px;
+      background:rgba(15,34,51,.55)
+    }
+    .blockname{font-weight:750;font-size:13px}
+    .time{font-size:12px;color:var(--muted)}
+
+    .checklist{display:grid;gap:8px;margin-top:10px}
+    .task{
+      display:flex;gap:10px;padding:10px;
+      border-radius:12px;border:1px solid var(--line);
+      background:rgba(0,0,0,.12)
+    }
+    .task.done{opacity:.75}
+    .task.done .tlabel{text-decoration:line-through}
+
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .row>*{flex:1 1 220px}
+    .field label{font-size:12px;color:var(--muted)}
+    input,select{
+      width:100%;background:rgba(0,0,0,.2);
+      border:1px solid var(--line);
+      color:var(--text);border-radius:12px;padding:10px
+    }
+
+    .footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="title">
+      <h1>Dashboard Operativa — SOP 01</h1>
+      <div class="sub">
+        09:00 Presidio · 09:30–12:30 Acquisizione · 15:30–18:30 Follow-up · 18:30 Pianificazione
+      </div>
+    </div>
+
+    <div class="pillrow">
+      <div class="pill"><span class="dot" id="dayDot"></span><span id="todayLabel"></span></div>
+      <div class="pill">Stato: <strong id="dayState">NON COMPLETATO</strong></div>
+      <button class="btn secondary" onclick="resetToday()">Reset giornata</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="sectiontitle">
+        <h2 style="font-size:14px">Checklist Operativa</h2>
+        <span class="badge">Obbligatoria</span>
+      </div>
+
+      <div class="checklist" id="checklist"></div>
+    </div>
+
+    <div class="card">
+      <div class="sectiontitle">
+        <h2 style="font-size:14px">Pianificazione Domani</h2>
+        <span class="badge">SOP</span>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Fonte domani</label>
+          <input id="tomorrow_source" placeholder="Una sola fonte" />
+        </div>
+        <div class="field">
+          <label>Script</label>
+          <input id="tomorrow_script" placeholder="Script definito" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    SOP 01 — Dashboard operativa offline · dati salvati nel browser
+  </div>
+
+</div>
+
+<script>
+  const KEY="sop01_state";
+  const today=new Date().toISOString().slice(0,10);
+
+  const TASKS=[
+    "Presidio digitale effettuato",
+    "Contenuti pubblicati",
+    "Richieste gestite",
+    "Acquisizione mattino completata",
+    "Follow-up pomeriggio completati",
+    "Pianificazione domani completata"
+  ];
+
+  function load(){
+    return JSON.parse(localStorage.getItem(KEY)||"{}")[today]||{};
+  }
+  function save(state){
+    const all=JSON.parse(localStorage.getItem(KEY)||"{}");
+    all[today]=state;
+    localStorage.setItem(KEY,JSON.stringify(all));
+  }
+
+  function render(){
+    const state=load();
+    const box=document.getElementById("checklist");
+    box.innerHTML="";
+    let done=0;
+
+    TASKS.forEach((t,i)=>{
+      const id="t"+i;
+      if(state[id]) done++;
+      const div=document.createElement("div");
+      div.className="task"+(state[id]?" done":"");
+      div.innerHTML=`
+        <input type="checkbox" ${state[id]?"checked":""}>
+        <div>
+          <div class="tlabel">${t}</div>
+        </div>`;
+      div.querySelector("input").onchange=e=>{
+        state[id]=e.target.checked;
+        save(state);
+        render();
+      };
+      box.appendChild(div);
+    });
+
+    document.getElementById("dayState").textContent=
+      done===TASKS.length ? "COMPLETATO" : done>0 ? "IN CORSO" : "NON COMPLETATO";
+    document.getElementById("dayDot").style.background=
+      done===TASKS.length ? "var(--good)" : done>0 ? "var(--warn)" : "var(--bad)";
+  }
+
+  function resetToday(){
+    if(confirm("Azzerare solo la giornata di oggi?")){
+      const all=JSON.parse(localStorage.getItem(KEY)||"{}");
+      delete all[today];
+      localStorage.setItem(KEY,JSON.stringify(all));
+      render();
+    }
+  }
+
+  document.getElementById("todayLabel").textContent=
+    new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  render();
+</script>
+</body>
+</html>
