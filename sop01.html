@@ -1,9 +1,59 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Dashboard Operativa SOP 01</title>
+
+  <!-- =========================================================
+       MIGLIORIA IN ALTO: Centro controllo clienti + Link rapidi
+       - Selezione cliente attivo
+       - Link rapidi per canali (FB/IG/TT/YT/Meta/Canva/Studio/PDF/ChatGPT)
+       - Appunti per cliente
+       - Prompt -> DOWNLOAD .txt (nessun output a schermo)
+       - Export/Import clienti .json (multi-PC)
+       ========================================================= -->
+  <style>
+    .clientWrap{margin-top:12px}
+    .clientHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .clientHeader .left{display:flex;flex-direction:column;gap:4px}
+    .clientHeader .left .sub{font-size:12px;color:var(--muted);line-height:1.4}
+    .clientControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .clientBadge{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:rgba(0,0,0,.18);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
+    .clientBadge strong{color:var(--text)}
+    .warnBar{margin-top:10px;border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.10);border-radius:12px;padding:10px;font-size:12px;color:var(--text)}
+    .dangerBar{margin-top:10px;border:1px solid rgba(239,68,68,.55);background:rgba(239,68,68,.10);border-radius:12px;padding:10px;font-size:12px;color:var(--text)}
+    .barTitle{font-weight:900}
+    .barSub{color:var(--muted);margin-top:4px}
+    .btnRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .quickBtn{
+      background:rgba(77,212,255,.12);
+      border:1px solid rgba(77,212,255,.30);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+      font-size:12px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+    .quickBtn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line)}
+    .quickBtn:disabled{opacity:.5;cursor:not-allowed}
+    .miniGrid{display:grid;gap:10px;margin-top:10px}
+    @media (min-width:980px){ .miniGrid{grid-template-columns:1fr 1fr} }
+    .clientForm{display:none;margin-top:10px;border:1px solid var(--line);background:rgba(15,34,51,.35);border-radius:14px;padding:12px}
+    .clientForm.active{display:block}
+    .noteBox{margin-top:10px}
+    .noteBox textarea{min-height:110px}
+    .fileRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .fileRow input[type="file"]{max-width:260px}
+    .miniBtn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-weight:750;font-size:12px}
+    .miniBtn:hover{filter:brightness(1.08)}
+    .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
+  </style>
 
   <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
   <style>
@@ -27,12 +77,11 @@
     .ch input{transform:scale(1.1);margin:0}
     .ch b{color:var(--text);font-weight:900}
     .cellNote{width:100%;min-height:38px;resize:vertical}
-    .miniBtn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-weight:750;font-size:12px}
-    .miniBtn:hover{filter:brightness(1.08)}
     .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
   </style>
 
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=70WoeJ_dtwIjN-wlANwV93G1brMjahMXAMcQ15cx1K2jzr1Sn53uUNpoLXt3RydmjTtVL-tC8tUnQCc6m2lhm1kPTgvCECui7NVaslEoFUs" charset="UTF-8"></script><style>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=70WoeJ_dtwIjN-wlANwV93G1brMjahMXAMcQ15cx1K2jzr1Sn53uUNpoLXt3RydmjTtVL-tC8tUnQCc6m2lhm1kPTgvCECui7NVaslEoFUs" charset="UTF-8"></script>
+  <style>
     :root{--bg:#0b0f14;--card:#121925;--muted:#9fb0c3;--text:#e9f0f7;--accent:#4dd4ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--line:#223044;}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070a0f,#0b0f14);color:var(--text)}
@@ -91,8 +140,186 @@
     .footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
   </style>
 </head>
+
 <body>
 <div class="wrap">
+
+  <!-- =========================================================
+       MIGLIORIA IN ALTO: Centro controllo clienti
+       ========================================================= -->
+  <div class="card clientWrap" id="clientCard">
+    <div class="clientHeader">
+      <div class="left">
+        <h2 style="margin:0;font-size:14px">Centro controllo clienti (seleziona prima il cliente)</h2>
+        <div class="sub">
+          Obiettivo: passare da un cliente all’altro senza sbagliare (anche su 2–3 PC).<br>
+          Regola: <b>se non selezioni il cliente, non pubblicare</b>.
+        </div>
+      </div>
+      <div class="clientControls">
+        <button class="miniBtn" id="addClientBtn">+ Aggiungi cliente</button>
+        <button class="miniBtn" id="editClientBtn">Modifica</button>
+        <button class="miniBtn" id="deleteClientBtn">Elimina</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div class="field">
+        <label>Cliente attivo</label>
+        <select id="activeClientSelect"></select>
+      </div>
+      <div class="field">
+        <label>Settore (cambia il tono)</label>
+        <select id="activeClientSector" disabled>
+          <option value="">—</option>
+          <option value="immobiliare">Immobiliare</option>
+          <option value="ristorante">Ristorante</option>
+          <option value="generico">Generico</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Stato</label>
+        <div class="clientBadge" id="activeClientBadge">Cliente attivo: <strong>NESSUNO</strong></div>
+      </div>
+    </div>
+
+    <div id="clientDanger" class="dangerBar" style="display:none">
+      <div class="barTitle">⚠️ STOP: nessun cliente selezionato</div>
+      <div class="barSub">Seleziona un cliente sopra. Poi usa i bottoni rapidi.</div>
+    </div>
+
+    <div id="clientWarn" class="warnBar" style="display:none">
+      <div class="barTitle">Attenzione: mancano alcuni link</div>
+      <div class="barSub" id="clientWarnText"></div>
+    </div>
+
+    <div class="btnRow">
+      <button class="quickBtn" id="q_fb">Apri Facebook</button>
+      <button class="quickBtn" id="q_ig">Apri Instagram</button>
+      <button class="quickBtn" id="q_tt">Apri TikTok</button>
+      <button class="quickBtn" id="q_yt">Apri YouTube</button>
+      <button class="quickBtn secondary" id="q_meta">Meta Business Suite</button>
+      <button class="quickBtn secondary" id="q_canva">Canva</button>
+      <button class="quickBtn secondary" id="q_ytstudio">YouTube Studio</button>
+      <button class="quickBtn" id="q_pdf">Pagina PDF + Consenso</button>
+      <button class="quickBtn secondary" id="q_gpt">ChatGPT cliente</button>
+    </div>
+
+    <div class="miniGrid">
+      <div class="noteBox">
+        <div class="field">
+          <label>Appunti (incolla qui tutto: brief, appunti, link, testo grezzo, ecc.)</label>
+          <textarea id="clientNotes" placeholder="Incolla qui gli appunti..."></textarea>
+        </div>
+
+        <div class="btnRow">
+          <button class="miniBtn" id="mkPromptImm">Crea prompt (Immobiliare)</button>
+          <button class="miniBtn" id="mkPromptRisto">Crea prompt (Ristorante)</button>
+          <button class="miniBtn" id="mkPromptNeutro">Crea prompt (Neutro)</button>
+          <button class="miniBtn" id="copyPromptBtn">Copia prompt</button>
+        </div>
+
+        <!-- RICHIESTA UTENTE: niente output a schermo -->
+        <div id="promptOut" style="display:none"></div>
+        <pre id="promptText" style="display:none"></pre>
+      </div>
+
+      <div>
+        <details open>
+          <summary><span>Guida facilissima (per chi è nuovo)</span><span class="badge">bimbo 10 anni</span></summary>
+          <div class="accordionContent">
+            <div style="color:var(--text);font-weight:900;margin-bottom:6px">“Controllo gruppi (Facebook/zone)” – cosa fai?</div>
+            <div>
+              1) Clicca <b>Apri Facebook</b> (del cliente).<br>
+              2) Nella barra di ricerca scrivi 1 parola chiave (es: “case Torino”, “vendita casa”, “Sant’Ambrogio”, “Val di Susa”).<br>
+              3) Apri i gruppi, leggi regole, salva post utili.<br>
+              4) Pubblica 2–3 contenuti utili (non aggressivi).<br>
+              5) Se chiedono info → manda il <b>link PDF + consenso</b>.
+            </div>
+
+            <div style="margin-top:10px;color:var(--text);font-weight:900;margin-bottom:6px">“Fonte del giorno” – cosa significa?</div>
+            <div>
+              È <b>da dove prendi i contatti oggi</b>. Scegline <b>UNA</b> e usa solo quella per tutta la sessione.
+            </div>
+
+            <div style="margin-top:10px;color:var(--text);font-weight:900;margin-bottom:6px">“Script usato” – cosa significa?</div>
+            <div>
+              È <b>la frase base</b> che userai oggi per scrivere ai contatti. (Messaggio standard + 1 riga personalizzata.)
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Export / Import clienti (per lavorare su più PC)</span><span class="badge">multi-PC</span></summary>
+          <div class="accordionContent">
+            <div class="btnRow">
+              <button class="miniBtn" id="exportClientsBtn">Esporta clienti (.json)</button>
+              <label class="miniBtn" style="cursor:pointer">
+                Importa clienti (.json)
+                <input type="file" id="importClientsFile" accept="application/json" style="display:none">
+              </label>
+            </div>
+            <div class="hintLine" style="margin-top:8px">
+              Consiglio: esporta dal PC 1 → importi su PC 2/3. Così hai sempre gli stessi clienti e link.
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Form aggiungi/modifica cliente -->
+    <div class="clientForm" id="clientForm">
+      <div class="sectiontitle">
+        <h2 style="margin:0;font-size:13px" id="clientFormTitle">Nuovo cliente</h2>
+        <span class="badge">offline · localStorage</span>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Nome cliente</label>
+          <input type="text" id="cf_name" placeholder="Es: La Sacra Immobiliare">
+        </div>
+        <div class="field">
+          <label>Settore</label>
+          <select id="cf_sector">
+            <option value="immobiliare">Immobiliare</option>
+            <option value="ristorante">Ristorante</option>
+            <option value="generico">Generico</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>Facebook</label><input type="text" id="cf_fb" placeholder="https://facebook.com/..."></div>
+        <div class="field"><label>Instagram</label><input type="text" id="cf_ig" placeholder="https://instagram.com/..."></div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>TikTok</label><input type="text" id="cf_tt" placeholder="https://tiktok.com/@..."></div>
+        <div class="field"><label>YouTube</label><input type="text" id="cf_yt" placeholder="https://youtube.com/@..."></div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>Meta Business Suite</label><input type="text" id="cf_meta" placeholder="https://business.facebook.com/..."></div>
+        <div class="field"><label>Canva</label><input type="text" id="cf_canva" placeholder="https://www.canva.com/..."></div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>YouTube Studio</label><input type="text" id="cf_ytstudio" placeholder="https://studio.youtube.com/..."></div>
+        <div class="field"><label>Pagina PDF + Consenso</label><input type="text" id="cf_pdf" placeholder="https://... (landing + modulo consenso)"></div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>ChatGPT cliente (link chat dedicata)</label><input type="text" id="cf_gpt" placeholder="https://chatgpt.com/c/..."></div>
+        <div class="field"><label>Nota interna</label><input type="text" id="cf_note" placeholder="Es: tono serio, zona, target..."></div>
+      </div>
+
+      <div class="btnRow">
+        <button class="miniBtn" id="saveClientBtn">Salva</button>
+        <button class="miniBtn" id="cancelClientBtn">Annulla</button>
+      </div>
+    </div>
+  </div>
 
   <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
   <div class="card weeklyWrap" id="weeklyPlannerCard">
@@ -118,6 +345,9 @@
     </div>
   </div>
 
+  <!-- =========================================
+       SOP 01 (codice originale, non toccato)
+       ========================================= -->
   <div class="topbar">
     <div class="title">
       <h1>Dashboard Operativa — SOP 01 (v1.4)</h1>
@@ -307,7 +537,9 @@
   <div class="footer">Dashboard SOP — offline, dati salvati sul dispositivo.</div>
 </div>
 
-<!-- === MIGLIORIA IN ALTO: JS Planner Settimanale Social (Lun–Dom) === -->
+<!-- =========================================================
+     JS: Planner Settimanale Social (Lun–Dom)
+     ========================================================= -->
 <script>
 (function(){
   const WEEKLY_KEY = "weekly_social_planner_v1";
@@ -405,7 +637,7 @@
         const noteKey = `${day}|${slot}|note`;
         const noteVal = (state[noteKey] ?? "");
         const noteHtml = showNotes ? `
-          <textarea class="cellNote" placeholder="Nota (es: Natale / 8 dicembre / tema...)" data-nkey="${noteKey}">${escapeHtml(noteVal)}</textarea>
+          <textarea class="cellNote" placeholder="Nota (es: tema, promo, evento...)" data-nkey="${noteKey}">${escapeHtml(noteVal)}</textarea>
         ` : ``;
 
         tds.push(`
@@ -464,6 +696,482 @@
 })();
 </script>
 
+<!-- =========================================================
+     JS: Centro controllo clienti + Prompt DOWNLOAD .txt
+     ========================================================= -->
+<script>
+(function(){
+  const CLIENTS_KEY = "sop_clients_v1";
+  const ACTIVE_CLIENT_KEY = "sop_active_client_v1";
+  const NOTES_PREFIX = "sop_client_notes_";
+
+  // Telefono unico (tuo contatto)
+  const CONTACT_PHONE = "3713708294";
+
+  const DEFAULT_CLIENTS = [
+    {
+      id: "realmediapro",
+      name: "Real Media Pro",
+      sector: "generico",
+      fb: "https://www.facebook.com/profile.php?id=61550077453442",
+      ig: "https://www.instagram.com/realmediaproagency/",
+      tt: "https://www.tiktok.com/@realmediaproagency",
+      yt: "https://www.youtube.com/@realmediaproagency",
+      meta: "https://business.facebook.com/",
+      canva: "https://www.canva.com/",
+      ytstudio: "https://studio.youtube.com/",
+      pdf: "https://realmediapro.it/",
+      gpt: "https://chatgpt.com/",
+      note: "Agency / tono professionale"
+    },
+    {
+      id: "lasacra",
+      name: "La Sacra Immobiliare",
+      sector: "immobiliare",
+      fb: "https://www.facebook.com/profile.php?id=61586046932616",
+      ig: "",
+      tt: "",
+      yt: "",
+      meta: "https://business.facebook.com/",
+      canva: "https://www.canva.com/",
+      ytstudio: "https://studio.youtube.com/",
+      pdf: "https://lasacraimmobiliare.it/",
+      gpt: "https://chatgpt.com/",
+      note: "Immobiliare / tono serio"
+    }
+  ];
+
+  function el(id){ return document.getElementById(id); }
+
+  function slugId(name){
+    return (name||"cliente")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/(^-|-$)/g,"")
+      .slice(0,40) || ("cliente-" + Math.random().toString(16).slice(2,8));
+  }
+
+  function loadClients(){
+    try{
+      const raw = localStorage.getItem(CLIENTS_KEY);
+      if(!raw){
+        localStorage.setItem(CLIENTS_KEY, JSON.stringify(DEFAULT_CLIENTS));
+        return DEFAULT_CLIENTS.slice();
+      }
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveClients(arr){
+    localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr));
+  }
+
+  function getActiveClientId(){
+    return localStorage.getItem(ACTIVE_CLIENT_KEY) || "";
+  }
+
+  function setActiveClientId(id){
+    localStorage.setItem(ACTIVE_CLIENT_KEY, id || "");
+  }
+
+  function findClient(arr, id){
+    return arr.find(c => c.id === id) || null;
+  }
+
+  function safeOpen(url){
+    if(!url) return;
+    window.open(url, "_blank", "noopener");
+  }
+
+  function requiredMissing(client){
+    const missing = [];
+    if(!client) return ["cliente"];
+    if(!client.fb) missing.push("Facebook");
+    if(!client.pdf) missing.push("Pagina PDF+Consenso");
+    if(!client.gpt) missing.push("ChatGPT cliente");
+    return missing;
+  }
+
+  function setBtnState(btn, enabled){
+    if(!btn) return;
+    btn.disabled = !enabled;
+  }
+
+  function renderClientUI(){
+    const clients = loadClients();
+    const sel = el("activeClientSelect");
+    const badge = el("activeClientBadge");
+    const sector = el("activeClientSector");
+    const warn = el("clientWarn");
+    const warnText = el("clientWarnText");
+    const danger = el("clientDanger");
+    const notes = el("clientNotes");
+
+    if(!sel) return;
+
+    const activeId = getActiveClientId();
+    sel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "— Seleziona cliente —";
+    sel.appendChild(opt0);
+
+    clients.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      if(c.id === activeId) o.selected = true;
+      sel.appendChild(o);
+    });
+
+    const active = findClient(clients, activeId);
+
+    if(badge){
+      badge.innerHTML = `Cliente attivo: <strong>${active ? active.name : "NESSUNO"}</strong>`;
+    }
+    if(sector){
+      sector.value = active ? (active.sector || "generico") : "";
+    }
+
+    // notes per cliente (chiave separata)
+    if(notes){
+      if(active){
+        notes.value = localStorage.getItem(NOTES_PREFIX + active.id) || "";
+      }else{
+        notes.value = "";
+      }
+    }
+
+    // warning/danger
+    if(!active){
+      if(danger) danger.style.display = "block";
+      if(warn) warn.style.display = "none";
+    }else{
+      if(danger) danger.style.display = "none";
+      const miss = requiredMissing(active);
+      const show = miss.length > 0;
+      if(warn){
+        warn.style.display = show ? "block" : "none";
+      }
+      if(warnText && show){
+        warnText.textContent = "Mancano: " + miss.join(", ") + ". Puoi aggiungerli con “Modifica”.";
+      }
+    }
+
+    // enable/disable quick buttons
+    const btns = {
+      fb: el("q_fb"), ig: el("q_ig"), tt: el("q_tt"), yt: el("q_yt"),
+      meta: el("q_meta"), canva: el("q_canva"), ytstudio: el("q_ytstudio"),
+      pdf: el("q_pdf"), gpt: el("q_gpt")
+    };
+
+    const hasActive = !!active;
+    setBtnState(btns.fb, hasActive && !!active.fb);
+    setBtnState(btns.ig, hasActive && !!active.ig);
+    setBtnState(btns.tt, hasActive && !!active.tt);
+    setBtnState(btns.yt, hasActive && !!active.yt);
+    setBtnState(btns.meta, hasActive && !!active.meta);
+    setBtnState(btns.canva, hasActive && !!active.canva);
+    setBtnState(btns.ytstudio, hasActive && !!active.ytstudio);
+    setBtnState(btns.pdf, hasActive && !!active.pdf);
+    setBtnState(btns.gpt, hasActive && !!active.gpt);
+  }
+
+  function bindClientEvents(){
+    const sel = el("activeClientSelect");
+    const notes = el("clientNotes");
+
+    if(sel){
+      sel.addEventListener("change", () => {
+        setActiveClientId(sel.value || "");
+        renderClientUI();
+      });
+    }
+
+    if(notes){
+      notes.addEventListener("input", () => {
+        const id = getActiveClientId();
+        if(!id) return;
+        localStorage.setItem(NOTES_PREFIX + id, notes.value || "");
+      });
+    }
+
+    // quick buttons open
+    function openField(field){
+      const clients = loadClients();
+      const active = findClient(clients, getActiveClientId());
+      if(!active) return;
+      safeOpen(active[field] || "");
+    }
+
+    const map = {
+      q_fb:"fb", q_ig:"ig", q_tt:"tt", q_yt:"yt",
+      q_meta:"meta", q_canva:"canva", q_ytstudio:"ytstudio",
+      q_pdf:"pdf", q_gpt:"gpt"
+    };
+    Object.keys(map).forEach(id=>{
+      const b = el(id);
+      if(b) b.addEventListener("click", ()=>openField(map[id]));
+    });
+
+    // add/edit/delete
+    const form = el("clientForm");
+    const title = el("clientFormTitle");
+    const addBtn = el("addClientBtn");
+    const editBtn = el("editClientBtn");
+    const delBtn = el("deleteClientBtn");
+    const saveBtn = el("saveClientBtn");
+    const cancelBtn = el("cancelClientBtn");
+
+    let editId = null;
+
+    function openForm(mode){
+      if(!form) return;
+      form.classList.add("active");
+      editId = null;
+
+      // reset fields
+      ["cf_name","cf_sector","cf_fb","cf_ig","cf_tt","cf_yt","cf_meta","cf_canva","cf_ytstudio","cf_pdf","cf_gpt","cf_note"].forEach(fid=>{
+        const x = el(fid);
+        if(x) x.value = (fid==="cf_sector") ? "generico" : "";
+      });
+
+      if(mode==="edit"){
+        const clients = loadClients();
+        const active = findClient(clients, getActiveClientId());
+        if(!active) return;
+        editId = active.id;
+        if(title) title.textContent = "Modifica cliente";
+        el("cf_name").value = active.name || "";
+        el("cf_sector").value = active.sector || "generico";
+        el("cf_fb").value = active.fb || "";
+        el("cf_ig").value = active.ig || "";
+        el("cf_tt").value = active.tt || "";
+        el("cf_yt").value = active.yt || "";
+        el("cf_meta").value = active.meta || "";
+        el("cf_canva").value = active.canva || "";
+        el("cf_ytstudio").value = active.ytstudio || "";
+        el("cf_pdf").value = active.pdf || "";
+        el("cf_gpt").value = active.gpt || "";
+        el("cf_note").value = active.note || "";
+      }else{
+        if(title) title.textContent = "Nuovo cliente";
+      }
+    }
+
+    function closeForm(){
+      if(!form) return;
+      form.classList.remove("active");
+      editId = null;
+    }
+
+    if(addBtn) addBtn.addEventListener("click", ()=>openForm("add"));
+    if(editBtn) editBtn.addEventListener("click", ()=>openForm("edit"));
+    if(cancelBtn) cancelBtn.addEventListener("click", closeForm);
+
+    if(delBtn){
+      delBtn.addEventListener("click", ()=>{
+        const clients = loadClients();
+        const activeId = getActiveClientId();
+        const active = findClient(clients, activeId);
+        if(!active){ alert("Seleziona un cliente da eliminare."); return; }
+        if(confirm(`Eliminare "${active.name}"?`)){
+          const next = clients.filter(c=>c.id!==activeId);
+          saveClients(next);
+          setActiveClientId("");
+          renderClientUI();
+        }
+      });
+    }
+
+    if(saveBtn){
+      saveBtn.addEventListener("click", ()=>{
+        const name = (el("cf_name").value||"").trim();
+        if(!name){ alert("Inserisci il nome cliente."); return; }
+        const obj = {
+          id: editId || slugId(name),
+          name,
+          sector: el("cf_sector").value || "generico",
+          fb: el("cf_fb").value.trim(),
+          ig: el("cf_ig").value.trim(),
+          tt: el("cf_tt").value.trim(),
+          yt: el("cf_yt").value.trim(),
+          meta: el("cf_meta").value.trim(),
+          canva: el("cf_canva").value.trim(),
+          ytstudio: el("cf_ytstudio").value.trim(),
+          pdf: el("cf_pdf").value.trim(),
+          gpt: el("cf_gpt").value.trim(),
+          note: el("cf_note").value.trim()
+        };
+
+        const clients = loadClients();
+        const idx = clients.findIndex(c=>c.id===obj.id);
+        if(idx>=0) clients[idx] = obj;
+        else clients.unshift(obj);
+
+        saveClients(clients);
+        setActiveClientId(obj.id);
+        closeForm();
+        renderClientUI();
+        alert("Cliente salvato.");
+      });
+    }
+
+    // export/import clienti
+    const exportBtn = el("exportClientsBtn");
+    const importFile = el("importClientsFile");
+    if(exportBtn){
+      exportBtn.addEventListener("click", ()=>{
+        const clients = loadClients();
+        const blob = new Blob([JSON.stringify(clients, null, 2)], {type:"application/json;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "clienti_sop01.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+    if(importFile){
+      importFile.addEventListener("change", async ()=>{
+        const f = importFile.files && importFile.files[0];
+        if(!f) return;
+        try{
+          const txt = await f.text();
+          const arr = JSON.parse(txt);
+          if(!Array.isArray(arr)) throw new Error("Formato non valido");
+          // normalizza minimi campi
+          const norm = arr.map(c=>({
+            id: (c.id || slugId(c.name||"cliente")),
+            name: (c.name||"Cliente"),
+            sector: (c.sector||"generico"),
+            fb: (c.fb||""),
+            ig: (c.ig||""),
+            tt: (c.tt||""),
+            yt: (c.yt||""),
+            meta: (c.meta||"https://business.facebook.com/"),
+            canva: (c.canva||"https://www.canva.com/"),
+            ytstudio: (c.ytstudio||"https://studio.youtube.com/"),
+            pdf: (c.pdf||""),
+            gpt: (c.gpt||"https://chatgpt.com/"),
+            note: (c.note||"")
+          }));
+          saveClients(norm);
+          setActiveClientId("");
+          renderClientUI();
+          alert("Clienti importati.");
+        }catch(e){
+          alert("Errore import: file non valido.");
+        }finally{
+          importFile.value = "";
+        }
+      });
+    }
+
+    // PROMPT -> DOWNLOAD .txt (nessun output a schermo)
+    function makePrompt(mode){
+      const clients = loadClients();
+      const client = findClient(clients, getActiveClientId());
+      if(!client){
+        alert("Seleziona prima un cliente.");
+        return;
+      }
+      const notes = (el("clientNotes")?.value || "").trim();
+
+      const sector = (client.sector || "generico");
+      const nome = (client.name || "Cliente");
+      const linkPdf = (client.pdf || "INSERISCI_LINK_PDF_CON_MODULO_CONSENSO");
+
+      const tone =
+        (mode==="immobiliare" || sector==="immobiliare") ? "IMMOBILIARE (professionale, chiaro, orientato alla vendita)" :
+        (mode==="ristorante" || sector==="ristorante") ? "RISTORANTE (caldo, appetitoso, invito all’azione)" :
+        "NEUTRO (pulito, informativo)";
+
+      const prompt = `Sei un social media manager.
+Cliente: ${nome}
+Tono: ${tone}
+
+OBIETTIVO:
+- creare 3 contenuti (post) + 1 caption Reel + 1 storia
+- ogni contenuto deve portare a: link PDF/landing con consenso oppure contatto diretto
+- stile semplice e umano, niente promesse esagerate
+
+DATI CLIENTE:
+- Telefono contatto: ${CONTACT_PHONE}
+- Link PDF/landing (con modulo consenso): ${linkPdf}
+
+APPUNTI GREZZI (da riformulare):
+${notes || "(nessun appunto incollato)"}
+
+REGOLE:
+- Scrivi testi brevi e chiari
+- Inserisci CTA finale: “Scrivimi in DM” oppure “Chiama/WhatsApp”
+- Non usare parole vietate o troppo aggressive
+- Se mancano dettagli dell’immobile/piatto, chiedi 3 domande rapide alla fine
+
+OUTPUT:
+1) Post 1 (testo + CTA)
+2) Post 2 (testo + CTA)
+3) Post 3 (testo + CTA)
+4) Caption Reel (breve)
+5) Testo Storia (1–2 righe)
+6) 5 hashtag coerenti e locali`;
+
+      // RICHIESTA UTENTE: niente output a schermo
+      const out = el("promptOut");
+      if(out) out.style.display = "none";
+      const pt = el("promptText");
+      if(pt) pt.style.display = "none";
+
+      // Download file .txt
+      const safeName = (nome || "cliente")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g,"-")
+        .replace(/(^-|-$)/g,"")
+        .slice(0,40) || "cliente";
+
+      const date = new Date();
+      const stamp = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+
+      const filename = `prompt_${safeName}_${mode || sector}_${stamp}.txt`;
+      const blob = new Blob([prompt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    const bImm = el("mkPromptImm");
+    const bRis = el("mkPromptRisto");
+    const bNeu = el("mkPromptNeutro");
+    if(bImm) bImm.addEventListener("click", ()=>makePrompt("immobiliare"));
+    if(bRis) bRis.addEventListener("click", ()=>makePrompt("ristorante"));
+    if(bNeu) bNeu.addEventListener("click", ()=>makePrompt("neutro"));
+
+    // bottone copia prompt: disabilitato (richiesta: prompt solo download)
+    const copyBtn = el("copyPromptBtn");
+    if(copyBtn){
+      copyBtn.addEventListener("click", ()=>{
+        alert("Il prompt viene scaricato come file .txt. Premi uno dei pulsanti 'Crea prompt'.");
+      });
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", ()=>{
+    renderClientUI();
+    bindClientEvents();
+  });
+})();
+</script>
+
+<!-- =========================================================
+     JS SOP 01 (codice originale)
+     ========================================================= -->
 <script>
 const STORAGE_KEY="sop_dashboard_v1";
 const LEADS_KEY="sop_leads_v1";
@@ -712,5 +1420,6 @@ setDateHeader();
 Object.keys(fields).forEach(bindField);
 applyStateToUI();
 </script>
+
 </body>
 </html>
