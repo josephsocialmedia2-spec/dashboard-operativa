@@ -79,6 +79,53 @@
     .cellNote{width:100%;min-height:38px;resize:vertical}
     .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
   </style>
+  <!-- === IMPLEMENTA: Planner Settimanale Social (UI + colori grigi + compatta + pallino rosso + confermato) === -->
+  <style>
+    /* Colori guida (solo toni grigi) per ridurre errori tra righe/colonne */
+    table.weekly tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+    table.weekly tbody tr:nth-child(odd) td{background:rgba(255,255,255,.015)}
+    table.weekly tbody td:nth-child(even){background:rgba(0,0,0,.10)}
+    table.weekly thead th:nth-child(even){background:rgba(18,25,37,.88)}
+    table.weekly thead th:nth-child(odd){background:rgba(18,25,37,.92)}
+
+    /* cell wrapper per indicatori */
+    .cell{position:relative}
+    .occDot{
+      position:absolute; top:8px; right:8px;
+      width:10px; height:10px; border-radius:999px;
+      background:rgba(239,68,68,.25);
+      border:1px solid rgba(239,68,68,.55);
+      box-shadow:0 0 0 2px rgba(0,0,0,.18);
+    }
+    .occDot.on{
+      background:rgba(239,68,68,.92);
+      border-color:rgba(239,68,68,.95);
+    }
+
+    /* Confermato */
+    .confirmRow{
+      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+      margin-top:2px;
+    }
+    .confirmTag{
+      display:inline-flex; align-items:center; gap:6px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .confirmTag input{transform:scale(1.1);margin:0}
+    .confirmTag b{color:var(--text);font-weight:900}
+
+    /* Modalità compatta per ridurre scroll */
+    #weeklyPlannerCard.weeklyCompact table.weekly th,
+    #weeklyPlannerCard.weeklyCompact table.weekly td{padding:7px}
+    #weeklyPlannerCard.weeklyCompact .ch{padding:5px 8px}
+    #weeklyPlannerCard.weeklyCompact .cellNote{min-height:30px}
+  </style>
+
 
   <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=70WoeJ_dtwIjN-wlANwV93G1brMjahMXAMcQ15cx1K2jzr1Sn53uUNpoLXt3RydmjTtVL-tC8tUnQCc6m2lhm1kPTgvCECui7NVaslEoFUs" charset="UTF-8"></script>
   <style>
@@ -552,6 +599,302 @@
     { id:"yt",  label:"YT" },
   ];
 
+  /* === IMPLEMENTA: funzioni extra planner (confermato / pallino rosso / compatta / filtri / export immagine / spostamento card) === */
+  function hasAnyLoaded(state, day, slot){
+    // slot "caricato" se almeno un canale è spuntato oppure se è confermato oppure se c'è una nota
+    const confKey = `${day}|${slot}|confirmed`;
+    const noteKey = `${day}|${slot}|note`;
+    if(state[confKey]) return true;
+    if((state[noteKey] || "").trim()) return true;
+    for(const ch of CHANNELS){
+      const k = `${day}|${slot}|${ch.id}`;
+      if(state[k]) return true;
+    }
+    return false;
+  }
+
+  function ensurePlannerControls(){
+    const controls = el("weeklyPlannerCard")?.querySelector(".weeklyControls");
+    if(!controls) return;
+
+    if(!el("toggleLoadedBtn")){
+      const b = document.createElement("button");
+      b.className = "miniBtn";
+      b.id = "toggleLoadedBtn";
+      b.type = "button";
+      b.textContent = "Mostra solo slot carichi";
+      controls.appendChild(b);
+    }
+
+    if(!el("toggleCompactBtn")){
+      const b = document.createElement("button");
+      b.className = "miniBtn";
+      b.id = "toggleCompactBtn";
+      b.type = "button";
+      b.textContent = "Compatta";
+      controls.appendChild(b);
+    }
+
+    if(!el("exportWeekImgBtn")){
+      const b = document.createElement("button");
+      b.className = "miniBtn";
+      b.id = "exportWeekImgBtn";
+      b.type = "button";
+      b.textContent = "Esporta immagine (PNG)";
+      controls.appendChild(b);
+    }
+  }
+
+  function applyPlannerModeUI(state){
+    const card = el("weeklyPlannerCard");
+    if(!card) return;
+
+    const compact = state.__compact === true;
+    if(compact) card.classList.add("weeklyCompact");
+    else card.classList.remove("weeklyCompact");
+
+    const toggleLoadedBtn = el("toggleLoadedBtn");
+    if(toggleLoadedBtn){
+      const onlyLoaded = state.__onlyLoaded === true;
+      toggleLoadedBtn.textContent = onlyLoaded ? "Mostra tutti gli slot" : "Mostra solo slot carichi";
+    }
+
+    const toggleCompactBtn = el("toggleCompactBtn");
+    if(toggleCompactBtn){
+      toggleCompactBtn.textContent = compact ? "Normale" : "Compatta";
+    }
+  }
+
+  function applyOnlyLoadedFilter(state){
+    const tbody = el("weeklyTbody");
+    if(!tbody) return;
+
+    const onlyLoaded = state.__onlyLoaded === true;
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    rows.forEach(tr=>{
+      const slotTd = tr.querySelector("td.slotHead");
+      const slot = slotTd ? slotTd.textContent.trim() : "";
+      if(!onlyLoaded){
+        tr.style.display = "";
+        return;
+      }
+
+      // per quella riga, se almeno un giorno ha qualcosa caricato, la riga resta
+      let any = false;
+      for(const day of DAYS){
+        if(hasAnyLoaded(state, day, slot)){ any = true; break; }
+      }
+      tr.style.display = any ? "" : "none";
+    });
+  }
+
+  function injectCellIndicatorsAndConfirmed(state){
+    const tbody = el("weeklyTbody");
+    if(!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    rows.forEach(tr=>{
+      const tds = Array.from(tr.querySelectorAll("td"));
+      if(tds.length < 2) return;
+
+      const slot = (tds[0]?.textContent || "").trim();
+
+      // celle giorno: da index 1 in poi
+      for(let i=1; i<tds.length; i++){
+        const day = DAYS[i-1];
+        const td = tds[i];
+        const cell = td.querySelector(".cell");
+        if(!cell) continue;
+
+        // pallino rosso (occupato/non libero)
+        let dot = cell.querySelector(".occDot");
+        if(!dot){
+          dot = document.createElement("span");
+          dot.className = "occDot";
+          cell.appendChild(dot);
+        }
+        const occupied = hasAnyLoaded(state, day, slot);
+        if(occupied) dot.classList.add("on");
+        else dot.classList.remove("on");
+
+        // riga "Confermato" (checkbox)
+        let cRow = cell.querySelector(".confirmRow");
+        if(!cRow){
+          cRow = document.createElement("div");
+          cRow.className = "confirmRow";
+
+          const label = document.createElement("label");
+          label.className = "confirmTag";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.setAttribute("data-ckey", `${day}|${slot}|confirmed`);
+
+          const txt = document.createElement("b");
+          txt.textContent = "Confermato";
+
+          label.appendChild(cb);
+          label.appendChild(txt);
+          cRow.appendChild(label);
+
+          // inserisci subito sotto i canali
+          const channels = cell.querySelector(".channels");
+          if(channels && channels.parentNode === cell){
+            channels.insertAdjacentElement("afterend", cRow);
+          }else{
+            cell.appendChild(cRow);
+          }
+        }
+
+        const cb = cRow.querySelector('input[type="checkbox"][data-ckey]');
+        if(cb){
+          const key = cb.getAttribute("data-ckey");
+          cb.checked = !!state[key];
+          cb.onchange = () => {
+            const s = loadWeek();
+            s[key] = cb.checked;
+            saveWeek(s);
+            // aggiorna indicatori subito senza rerender completo
+            injectCellIndicatorsAndConfirmed(s);
+            applyOnlyLoadedFilter(s);
+            applyPlannerModeUI(s);
+          };
+        }
+      }
+    });
+  }
+
+  function exportPlannerAsPng(){
+    const card = el("weeklyPlannerCard");
+    const tableWrap = card?.querySelector(".weeklyTableWrap");
+    const table = el("weeklyTable");
+    const label = el("weekLabel");
+    if(!card || !tableWrap || !table) return;
+
+    // Crea markup "pulito" per l'export (solo planner)
+    const cloneWrap = document.createElement("div");
+    cloneWrap.style.width = table.offsetWidth + "px";
+    cloneWrap.style.padding = "14px";
+    cloneWrap.style.background = "#0b0f14";
+    cloneWrap.style.color = "#e9f0f7";
+    cloneWrap.style.fontFamily = "system-ui,-apple-system,Segoe UI,Roboto,Arial";
+
+    const title = document.createElement("div");
+    title.style.fontWeight = "900";
+    title.style.fontSize = "14px";
+    title.style.marginBottom = "6px";
+    title.textContent = "Schema Settimanale Social (Lun → Dom)";
+    cloneWrap.appendChild(title);
+
+    if(label){
+      const sub = document.createElement("div");
+      sub.style.fontSize = "12px";
+      sub.style.color = "#9fb0c3";
+      sub.style.marginBottom = "10px";
+      sub.textContent = label.textContent || "";
+      cloneWrap.appendChild(sub);
+    }
+
+    const tableClone = table.cloneNode(true);
+    // ripristina header non-sticky per export
+    tableClone.querySelectorAll("thead th").forEach(th=>{
+      th.style.position = "static";
+      th.style.top = "auto";
+      th.style.zIndex = "auto";
+    });
+
+    // rimuovi scrollbar wrapper, metti direttamente la tabella
+    cloneWrap.appendChild(tableClone);
+
+    // stylesheet minimo per resa simile
+    const style = document.createElement("style");
+    style.textContent = `
+      table{width:100%;border-collapse:separate;border-spacing:0}
+      th,td{border-bottom:1px solid #223044;border-right:1px solid #223044;padding:10px;vertical-align:top}
+      th:last-child,td:last-child{border-right:none}
+      tr:last-child td{border-bottom:none}
+      thead th{background:rgba(18,25,37,.92)}
+      .slotHead{width:92px;color:#9fb0c3;font-weight:800;font-size:12px}
+      .dayHead{font-size:12px;font-weight:900;letter-spacing:.2px;color:#e9f0f7}
+      .cell{position:relative;display:flex;flex-direction:column;gap:8px}
+      .channels{display:flex;gap:8px;flex-wrap:wrap}
+      .ch{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.22);border:1px solid #223044;border-radius:999px;padding:6px 10px;font-size:12px;color:#9fb0c3}
+      .ch b{color:#e9f0f7;font-weight:900}
+      .cellNote{width:100%;min-height:38px;resize:none;background:rgba(0,0,0,.2);border:1px solid #223044;color:#e9f0f7;border-radius:12px;padding:10px;outline:none}
+      .confirmRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
+      .confirmTag{display:inline-flex;align-items:center;gap:6px;border:1px solid #223044;background:rgba(0,0,0,.18);border-radius:999px;padding:6px 10px;font-size:12px;color:#9fb0c3}
+      .confirmTag b{color:#e9f0f7;font-weight:900}
+      .occDot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:999px;background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.55);box-shadow:0 0 0 2px rgba(0,0,0,.18)}
+      .occDot.on{background:rgba(239,68,68,.92);border-color:rgba(239,68,68,.95)}
+      tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+      tbody tr:nth-child(odd) td{background:rgba(255,255,255,.015)}
+      tbody td:nth-child(even){background:rgba(0,0,0,.10)}
+      thead th:nth-child(even){background:rgba(18,25,37,.88)}
+      thead th:nth-child(odd){background:rgba(18,25,37,.92)}
+    `;
+    cloneWrap.insertBefore(style, cloneWrap.firstChild);
+
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    const width = table.offsetWidth + 28;
+    const height = table.offsetHeight + 90;
+    svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", height);
+
+    const foreign = document.createElementNS("http://www.w3.org/2000/svg","foreignObject");
+    foreign.setAttribute("x","0");
+    foreign.setAttribute("y","0");
+    foreign.setAttribute("width","100%");
+    foreign.setAttribute("height","100%");
+    foreign.appendChild(cloneWrap);
+    svg.appendChild(foreign);
+
+    const xml = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob((blob)=>{
+        if(!blob) return;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const stamp = weekKey();
+        a.download = `planner_settimanale_${stamp}.png`;
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      }, "image/png");
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      alert("Export immagine non riuscito su questo browser. (Suggerimento: prova Chrome/Edge)");
+    };
+    img.src = url;
+  }
+
+  function movePlannerBelowQuickButtons(){
+    const card = el("weeklyPlannerCard");
+    const clientCard = el("clientCard");
+    if(!card || !clientCard) return;
+
+    const btnRow = clientCard.querySelector(".btnRow");
+    if(!btnRow) return;
+
+    // inserisci la card subito dopo la riga dei pulsanti rapidi
+    if(btnRow.parentNode){
+      btnRow.insertAdjacentElement("afterend", card);
+    }
+  }
+
+
   function getMonday(d){
     const date = new Date(d);
     const day = date.getDay();
@@ -659,6 +1002,7 @@
         const s = loadWeek();
         s[cb.dataset.wkey] = cb.checked;
         saveWeek(s);
+        try{ injectCellIndicatorsAndConfirmed(s); applyOnlyLoadedFilter(s); applyPlannerModeUI(s); }catch(e){}
       });
     });
 
@@ -667,6 +1011,7 @@
         const s = loadWeek();
         s[tx.dataset.nkey] = tx.value;
         saveWeek(s);
+        try{ injectCellIndicatorsAndConfirmed(s); applyOnlyLoadedFilter(s); applyPlannerModeUI(s); }catch(e){}
       });
     });
 
@@ -690,9 +1035,57 @@
         }
       };
     }
+
+    /* === IMPLEMENTA: post-render (confermato + pallino rosso + modalità compatta/filtri) === */
+    try{
+      ensurePlannerControls();
+      injectCellIndicatorsAndConfirmed(state);
+      applyOnlyLoadedFilter(state);
+      applyPlannerModeUI(state);
+
+      const toggleLoadedBtn = el("toggleLoadedBtn");
+      if(toggleLoadedBtn){
+        toggleLoadedBtn.onclick = () => {
+          const s = loadWeek();
+          s.__onlyLoaded = !(s.__onlyLoaded === true);
+          saveWeek(s);
+          applyOnlyLoadedFilter(s);
+          applyPlannerModeUI(s);
+        };
+      }
+
+      const toggleCompactBtn = el("toggleCompactBtn");
+      if(toggleCompactBtn){
+        toggleCompactBtn.onclick = () => {
+          const s = loadWeek();
+          s.__compact = !(s.__compact === true);
+          saveWeek(s);
+          applyPlannerModeUI(s);
+        };
+      }
+
+      const exportBtn = el("exportWeekImgBtn");
+      if(exportBtn){
+        exportBtn.onclick = () => exportPlannerAsPng();
+      }
+    }catch(e){}
+
   }
 
   window.addEventListener("DOMContentLoaded", renderPlanner);
+
+  /* === IMPLEMENTA: sposta planner sotto i pulsanti rapidi per maggiore controllo === */
+  window.addEventListener("DOMContentLoaded", () => {
+    try{
+      movePlannerBelowQuickButtons();
+      const s = loadWeek();
+      ensurePlannerControls();
+      applyPlannerModeUI(s);
+      applyOnlyLoadedFilter(s);
+      injectCellIndicatorsAndConfirmed(s);
+    }catch(e){}
+  });
+
 })();
 </script>
 
