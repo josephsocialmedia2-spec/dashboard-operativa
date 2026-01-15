@@ -1814,5 +1814,35 @@ Object.keys(fields).forEach(bindField);
 applyStateToUI();
 </script>
 
+
+<!-- IMPLEMENTA: colori celle confermate planner settimanale -->
+<style>
+  .weekly td.confirmed {
+    background: rgba(120,120,120,.18);
+  }
+  .weekly td.confirmed .channels {
+    opacity: .9;
+  }
+</style>
+
+<!-- IMPLEMENTA: stato confermato celle planner settimanale -->
+<script>
+(function(){
+  function updateConfirmed(){
+    document.querySelectorAll('#weeklyTbody td').forEach(td=>{
+      const anyChecked = td.querySelector('input[type="checkbox"]:checked');
+      if(anyChecked) td.classList.add('confirmed');
+      else td.classList.remove('confirmed');
+    });
+  }
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.matches('#weeklyTbody input[type="checkbox"]')){
+      updateConfirmed();
+    }
+  });
+  window.addEventListener('DOMContentLoaded', updateConfirmed);
+})();
+</script>
+
 </body>
 </html>
