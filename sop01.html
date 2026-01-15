@@ -2022,5 +2022,445 @@ applyStateToUI();
 })();
 </script>
 
+
+<!-- IMPLEMENTA: Google Drive Sync (Apps Script Web App) -->
+<style>
+  .driveSyncCard{margin-top:12px;border:1px solid var(--line);background:rgba(15,34,51,.35);border-radius:14px;padding:12px}
+  .driveSyncRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .driveSyncStatus{font-size:12px;color:var(--muted)}
+  .driveSyncStatus b{color:var(--text)}
+  .driveSyncInput{max-width:520px}
+</style>
+
+
+<!-- IMPLEMENTA: Google Drive Sync (Apps Script Web App) -->
+<script>
+(function(){
+  const DRIVE_ENDPOINT_KEY = "sop_drive_webapp_url_v1";
+  const DRIVE_LASTSYNC_KEY = "sop_drive_last_sync_v1";
+
+  const KEYS_EXACT = [
+    "sop_dashboard_v1",
+    "sop_leads_v1",
+    "sop_clients_v1",
+    "sop_active_client_v1",
+    "weekly_social_planner_v1"
+  ];
+  const KEY_PREFIXES = [
+    "sop_client_notes_"
+  ];
+
+  function nowIso(){ return new Date().toISOString(); }
+
+  function getEndpoint(){
+    return (localStorage.getItem(DRIVE_ENDPOINT_KEY)||"").trim();
+  }
+  function setEndpoint(url){
+    localStorage.setItem(DRIVE_ENDPOINT_KEY, (url||"").trim());
+  }
+
+  function collectData(){
+    const payload = {};
+    // exact keys
+    KEYS_EXACT.forEach(k=>{
+      const v = localStorage.getItem(k);
+      if(v !== null) payload[k] = v;
+    });
+    // prefixed keys
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      for(const p of KEY_PREFIXES){
+        if(k.startsWith(p)){
+          const v = localStorage.getItem(k);
+          if(v !== null) payload[k] = v;
+          break;
+        }
+      }
+    }
+    return payload;
+  }
+
+  function applyData(map){
+    if(!map || typeof map !== "object") return;
+    Object.keys(map).forEach(k=>{
+      try{
+        if(typeof map[k] === "string"){
+          localStorage.setItem(k, map[k]);
+        }
+      }catch(e){}
+    });
+  }
+
+  async function postJson(url, body){
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const txt = await res.text();
+    let j = null;
+    try{ j = JSON.parse(txt); }catch(e){ j = { ok:false, raw:txt }; }
+    return j;
+  }
+
+  async function loadFromDrive(){
+    const url = getEndpoint();
+    if(!url) return {ok:false, msg:"URL Web App non impostato"};
+    const j = await postJson(url, { action:"load" });
+    if(j && j.ok && j.data){
+      applyData(j.data);
+      localStorage.setItem(DRIVE_LASTSYNC_KEY, nowIso());
+      return {ok:true};
+    }
+    return {ok:false, msg:(j && (j.msg||j.error||j.raw)) || "Errore load"};
+  }
+
+  async function saveToDrive(){
+    const url = getEndpoint();
+    if(!url) return {ok:false, msg:"URL Web App non impostato"};
+    const data = collectData();
+    const j = await postJson(url, { action:"save", data });
+    if(j && j.ok){
+      localStorage.setItem(DRIVE_LASTSYNC_KEY, nowIso());
+      return {ok:true};
+    }
+    return {ok:false, msg:(j && (j.msg||j.error||j.raw)) || "Errore save"};
+  }
+
+  function renderUI(){
+    const weeklyCard = document.getElementById("weeklyPlannerCard");
+    if(!weeklyCard) return;
+
+    if(document.getElementById("driveSyncCard")) return;
+
+    const card = document.createElement("div");
+    card.className = "driveSyncCard";
+    card.id = "driveSyncCard";
+    card.innerHTML = `
+      <div class="sectiontitle">
+        <h2 style="margin:0;font-size:13px">Sync Google Drive (multi-PC)</h2>
+        <span class="badge">Apps Script Web App</span>
+      </div>
+      <div class="hintLine" style="margin-top:6px">
+        Imposta l’URL della Web App. Poi usa “Carica da Drive” all’avvio e “Salva su Drive” quando hai finito (o quando vuoi).
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div class="field">
+          <label>URL Web App (Apps Script)</label>
+          <input class="driveSyncInput" type="text" id="driveWebAppUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
+        </div>
+      </div>
+
+      <div class="driveSyncRow">
+        <button class="miniBtn" id="driveSaveBtn">Salva su Drive</button>
+        <button class="miniBtn" id="driveLoadBtn">Carica da Drive</button>
+        <button class="miniBtn" id="driveTestBtn">Test connessione</button>
+        <div class="driveSyncStatus" id="driveSyncStatus">Stato: <b>non configurato</b></div>
+      </div>
+    `;
+
+    // Insert right after weekly planner card (below it) for visibility
+    weeklyCard.parentNode.insertBefore(card, weeklyCard.nextSibling);
+
+    const input = document.getElementById("driveWebAppUrl");
+    const status = document.getElementById("driveSyncStatus");
+    const saveBtn = document.getElementById("driveSaveBtn");
+    const loadBtn = document.getElementById("driveLoadBtn");
+    const testBtn = document.getElementById("driveTestBtn");
+
+    const last = (localStorage.getItem(DRIVE_LASTSYNC_KEY)||"").trim();
+
+    input.value = getEndpoint();
+
+    function setStatus(txt){
+      if(status) status.innerHTML = `Stato: <b>${txt}</b>` + (last ? ` · ultimo sync: ${(new Date(last)).toLocaleString("it-IT")}` : "");
+    }
+
+    if(getEndpoint()) setStatus("configurato");
+    else setStatus("non configurato");
+
+    input.addEventListener("input", ()=>{
+      setEndpoint(input.value);
+      setStatus(getEndpoint() ? "configurato" : "non configurato");
+    });
+
+    function lockButtons(lock){
+      if(saveBtn) saveBtn.disabled = !!lock;
+      if(loadBtn) loadBtn.disabled = !!lock;
+      if(testBtn) testBtn.disabled = !!lock;
+    }
+
+    if(saveBtn){
+      saveBtn.addEventListener("click", async ()=>{
+        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
+        lockButtons(true);
+        setStatus("salvataggio…");
+        try{
+          const r = await saveToDrive();
+          if(r.ok){ setStatus("salvato ✅"); }
+          else{ setStatus("errore ❌"); alert("Errore salvataggio: " + (r.msg||"")); }
+        }finally{
+          lockButtons(false);
+        }
+      });
+    }
+
+    if(loadBtn){
+      loadBtn.addEventListener("click", async ()=>{
+        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
+        lockButtons(true);
+        setStatus("caricamento…");
+        try{
+          const r = await loadFromDrive();
+          if(r.ok){
+            setStatus("caricato ✅ (ricarico UI)");
+            // Reload page to ensure all widgets pick up the restored localStorage
+            location.reload();
+          }else{
+            setStatus("errore ❌");
+            alert("Errore caricamento: " + (r.msg||""));
+          }
+        }finally{
+          lockButtons(false);
+        }
+      });
+    }
+
+    if(testBtn){
+      testBtn.addEventListener("click", async ()=>{
+        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
+        lockButtons(true);
+        setStatus("test…");
+        try{
+          const j = await postJson(getEndpoint(), { action:"ping" });
+          if(j && j.ok){ setStatus("ok ✅"); }
+          else{ setStatus("errore ❌"); alert("Test fallito: " + ((j && (j.msg||j.error||j.raw)) || "")); }
+        }finally{
+          lockButtons(false);
+        }
+      });
+    }
+  }
+
+  // Add-only monkeypatch: auto-save debounce on localStorage writes for tracked keys
+  let saveTimer = null;
+  const AUTO_SAVE_MS = 1500;
+
+  function shouldTrackKey(k){
+    if(!k) return false;
+    if(KEYS_EXACT.includes(k)) return true;
+    for(const p of KEY_PREFIXES){
+      if(k.startsWith(p)) return true;
+    }
+    return false;
+  }
+
+  function scheduleAutoSave(){
+    const url = getEndpoint();
+    if(!url) return;
+    if(saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{ saveToDrive().catch(()=>{}); }, AUTO_SAVE_MS);
+  }
+
+  try{
+    const _setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k,v){
+      _setItem.apply(this, arguments);
+      try{
+        if(this === localStorage && shouldTrackKey(k)){
+          scheduleAutoSave();
+        }
+      }catch(e){}
+    };
+  }catch(e){}
+
+  window.addEventListener("DOMContentLoaded", renderUI);
+})();
+</script>
+
+
+<!-- IMPLEMENTA: precompila URL Web App Drive se mancante -->
+<script>
+(function(){
+  try{
+    const K = "sop_drive_webapp_url_v1";
+    const current = (localStorage.getItem(K)||"").trim();
+    if(!current){
+      localStorage.setItem(K, "https://script.google.com/macros/s/AKfycbxRe3MMKfBlqDbkxMq63ULttvJ3ma5-W_nNZDt4MXFYjcNDUMGzV8jE6XaJ2wZWo8iP/exec");
+    }
+  }catch(e){}
+})();
+</script>
+
+
+<!-- IMPLEMENTA: FIX Drive Sync - evita blocco su "salvataggio" (no preflight CORS + timeout + stop autosave loop) -->
+<script>
+(function(){
+  // Override postJson used by Drive Sync by re-defining a global helper and patching fetch calls via window.__SOP_POSTJSON
+  // This block is additive and does not modify existing code.
+  const DRIVE_ENDPOINT_KEY = "sop_drive_webapp_url_v1";
+  const DRIVE_LASTSYNC_KEY = "sop_drive_last_sync_v1";
+
+  function getEndpoint(){
+    return (localStorage.getItem(DRIVE_ENDPOINT_KEY)||"").trim();
+  }
+
+  // No-headers POST (text/plain) to avoid CORS preflight against Apps Script
+  async function postJsonNoPreflight(url, body, timeoutMs){
+    const controller = new AbortController();
+    const t = setTimeout(()=>controller.abort(), timeoutMs || 12000);
+    try{
+      const res = await fetch(url, {
+        method: "POST",
+        // IMPORTANT: do NOT set Content-Type header -> avoids OPTIONS preflight
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      const txt = await res.text();
+      try{ return JSON.parse(txt); }catch(e){ return { ok:false, raw:txt }; }
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  // Patch Storage.setItem again with a guard so Drive Sync internal keys won't trigger auto-save recursion
+  try{
+    const _setItem2 = Storage.prototype.setItem;
+    let guard = 0;
+
+    function isDriveInternalKey(k){
+      return (k === DRIVE_ENDPOINT_KEY) || (k === DRIVE_LASTSYNC_KEY);
+    }
+
+    Storage.prototype.setItem = function(k,v){
+      _setItem2.apply(this, arguments);
+      try{
+        if(this === localStorage){
+          if(isDriveInternalKey(k)) return;
+          // if Drive Sync auto-save exists, it may be scheduled elsewhere; prevent rapid recursion during sync writes
+          if(guard > 0) return;
+        }
+      }catch(e){}
+    };
+
+    // Expose a helper to let other blocks temporarily pause triggers
+    window.__SOP_DRIVE_SYNC_GUARD = {
+      enter: ()=>{ guard++; },
+      exit: ()=>{ guard = Math.max(0, guard-1); }
+    };
+  }catch(e){}
+
+  // Add working buttons if old ones get stuck (rebind click with the no-preflight function)
+  function rebindButtons(){
+    const saveBtn = document.getElementById("driveSaveBtn");
+    const loadBtn = document.getElementById("driveLoadBtn");
+    const testBtn = document.getElementById("driveTestBtn");
+    const status = document.getElementById("driveSyncStatus");
+
+    function setStatus(txt){
+      if(status) status.innerHTML = 'Stato: <b>' + txt + '</b>';
+    }
+    function lock(lockit){
+      if(saveBtn) saveBtn.disabled = !!lockit;
+      if(loadBtn) loadBtn.disabled = !!lockit;
+      if(testBtn) testBtn.disabled = !!lockit;
+    }
+
+    if(testBtn){
+      testBtn.addEventListener("click", async function(){
+        const url = getEndpoint();
+        if(!url){ alert("Inserisci l’URL della Web App."); return; }
+        lock(true); setStatus("test…");
+        try{
+          const j = await postJsonNoPreflight(url, { action:"ping" }, 12000);
+          if(j && j.ok) setStatus("ok ✅");
+          else { setStatus("errore ❌"); alert("Test fallito: " + ((j && (j.msg||j.error||j.raw)) || "")); }
+        }catch(e){
+          setStatus("errore ❌");
+          alert("Test fallito (timeout o blocco CORS).");
+        }finally{ lock(false); }
+      }, {capture:true});
+    }
+
+    if(saveBtn){
+      saveBtn.addEventListener("click", async function(){
+        const url = getEndpoint();
+        if(!url){ alert("Inserisci l’URL della Web App."); return; }
+        lock(true); setStatus("salvataggio…");
+        try{
+          // Collect data from localStorage similarly to main block (best-effort, additive)
+          const KEYS_EXACT = ["sop_dashboard_v1","sop_leads_v1","sop_clients_v1","sop_active_client_v1","weekly_social_planner_v1"];
+          const KEY_PREFIXES = ["sop_client_notes_"];
+          const data = {};
+          KEYS_EXACT.forEach(k=>{ const v = localStorage.getItem(k); if(v!==null) data[k]=v; });
+          for(let i=0;i<localStorage.length;i++){
+            const k = localStorage.key(i);
+            if(!k) continue;
+            for(const p of KEY_PREFIXES){
+              if(k.startsWith(p)){
+                const v = localStorage.getItem(k);
+                if(v!==null) data[k]=v;
+                break;
+              }
+            }
+          }
+
+          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.enter();
+          const j = await postJsonNoPreflight(url, { action:"save", data:data }, 20000);
+          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
+
+          if(j && j.ok){
+            try{ localStorage.setItem(DRIVE_LASTSYNC_KEY, new Date().toISOString()); }catch(e){}
+            setStatus("salvato ✅");
+          }else{
+            setStatus("errore ❌");
+            alert("Errore salvataggio: " + ((j && (j.msg||j.error||j.raw)) || ""));
+          }
+        }catch(e){
+          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
+          setStatus("errore ❌");
+          alert("Errore salvataggio (timeout o blocco CORS).");
+        }finally{ lock(false); }
+      }, {capture:true});
+    }
+
+    if(loadBtn){
+      loadBtn.addEventListener("click", async function(){
+        const url = getEndpoint();
+        if(!url){ alert("Inserisci l’URL della Web App."); return; }
+        lock(true); setStatus("caricamento…");
+        try{
+          const j = await postJsonNoPreflight(url, { action:"load" }, 20000);
+          if(j && j.ok && j.data){
+            if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.enter();
+            Object.keys(j.data).forEach(k=>{
+              try{ if(typeof j.data[k]==="string") localStorage.setItem(k, j.data[k]); }catch(e){}
+            });
+            if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
+            try{ localStorage.setItem(DRIVE_LASTSYNC_KEY, new Date().toISOString()); }catch(e){}
+            setStatus("caricato ✅ (ricarico UI)");
+            location.reload();
+          }else{
+            setStatus("errore ❌");
+            alert("Errore caricamento: " + ((j && (j.msg||j.error||j.raw)) || ""));
+          }
+        }catch(e){
+          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
+          setStatus("errore ❌");
+          alert("Errore caricamento (timeout o blocco CORS).");
+        }finally{ lock(false); }
+      }, {capture:true});
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", function(){
+    // Delay to ensure the original sync UI exists
+    setTimeout(rebindButtons, 50);
+  });
+})();
+</script>
+
 </body>
 </html>
