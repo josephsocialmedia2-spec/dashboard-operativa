@@ -1,2466 +1,451 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard Operativa SOP 01</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GESTIONALE — Hub Operativo</title>
 
-  <!-- =========================================================
-       MIGLIORIA IN ALTO: Centro controllo clienti + Link rapidi
-       - Selezione cliente attivo
-       - Link rapidi per canali (FB/IG/TT/YT/Meta/Canva/Studio/PDF/ChatGPT)
-       - Appunti per cliente
-       - Prompt -> DOWNLOAD .txt (nessun output a schermo)
-       - Export/Import clienti .json (multi-PC)
-       ========================================================= -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
   <style>
-    .clientWrap{margin-top:12px}
-    .clientHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
-    .clientHeader .left{display:flex;flex-direction:column;gap:4px}
-    .clientHeader .left .sub{font-size:12px;color:var(--muted);line-height:1.4}
-    .clientControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .clientBadge{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:rgba(0,0,0,.18);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
-    .clientBadge strong{color:var(--text)}
-    .warnBar{margin-top:10px;border:1px solid rgba(245,158,11,.45);background:rgba(245,158,11,.10);border-radius:12px;padding:10px;font-size:12px;color:var(--text)}
-    .dangerBar{margin-top:10px;border:1px solid rgba(239,68,68,.55);background:rgba(239,68,68,.10);border-radius:12px;padding:10px;font-size:12px;color:var(--text)}
-    .barTitle{font-weight:900}
-    .barSub{color:var(--muted);margin-top:4px}
-    .btnRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .quickBtn{
-      background:rgba(77,212,255,.12);
-      border:1px solid rgba(77,212,255,.30);
-      color:var(--text);
-      padding:8px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:800;
-      font-size:12px;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
+    :root{
+      --bg:#0b0f18; --card:#111827; --line:#222; --text:#fff; --muted:#aaa;
+      --accent:#0073C0; --accent2: rgba(0,115,192,.35);
     }
-    .quickBtn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line)}
-    .quickBtn:disabled{opacity:.5;cursor:not-allowed}
-    .miniGrid{display:grid;gap:10px;margin-top:10px}
-    @media (min-width:980px){ .miniGrid{grid-template-columns:1fr 1fr} }
-    .clientForm{display:none;margin-top:10px;border:1px solid var(--line);background:rgba(15,34,51,.35);border-radius:14px;padding:12px}
-    .clientForm.active{display:block}
-    .noteBox{margin-top:10px}
-    .noteBox textarea{min-height:110px}
-    .fileRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
-    .fileRow input[type="file"]{max-width:260px}
-    .miniBtn{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--text);cursor:pointer;font-weight:750;font-size:12px}
-    .miniBtn:hover{filter:brightness(1.08)}
-    .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
-  </style>
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    header{padding:24px;text-align:center;border-bottom:1px solid var(--line)}
+    header h1{margin:0;letter-spacing:6px}
+    header p{margin-top:8px;color:var(--muted);font-size:14px}
 
-  <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
-  <style>
-    .weeklyWrap{margin-top:12px}
-    .weeklyHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-    .weeklyHeader .left{display:flex;flex-direction:column;gap:2px}
-    .weeklyHeader .left .sub{font-size:12px;color:var(--muted)}
-    .weeklyControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-
-    .weeklyTableWrap{margin-top:10px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:rgba(15,34,51,.35)}
-    table.weekly{width:100%;border-collapse:separate;border-spacing:0;min-width:980px}
-    table.weekly th, table.weekly td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:10px;vertical-align:top}
-    table.weekly th:last-child, table.weekly td:last-child{border-right:none}
-    table.weekly tr:last-child td{border-bottom:none}
-    table.weekly thead th{position:sticky;top:0;background:rgba(18,25,37,.92);backdrop-filter:blur(10px);z-index:2}
-    .slotHead{width:92px;color:var(--muted);font-weight:800;font-size:12px}
-    .dayHead{font-size:12px;font-weight:900;letter-spacing:.2px}
-    .cell{display:flex;flex-direction:column;gap:8px}
-    .channels{display:flex;gap:8px;flex-wrap:wrap}
-    .ch{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted)}
-    .ch input{transform:scale(1.1);margin:0}
-    .ch b{color:var(--text);font-weight:900}
-    .cellNote{width:100%;min-height:38px;resize:vertical}
-    .hintLine{font-size:12px;color:var(--muted);line-height:1.4}
-  </style>
-  <!-- === IMPLEMENTA: Planner Settimanale Social (UI + colori grigi + compatta + pallino rosso + confermato) === -->
-  <style>
-    /* Colori guida (solo toni grigi) per ridurre errori tra righe/colonne */
-    table.weekly tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
-    table.weekly tbody tr:nth-child(odd) td{background:rgba(255,255,255,.015)}
-    table.weekly tbody td:nth-child(even){background:rgba(0,0,0,.10)}
-    table.weekly thead th:nth-child(even){background:rgba(18,25,37,.88)}
-    table.weekly thead th:nth-child(odd){background:rgba(18,25,37,.92)}
-
-    /* cell wrapper per indicatori */
-    .cell{position:relative}
-    .occDot{
-      position:absolute; top:8px; right:8px;
-      width:10px; height:10px; border-radius:999px;
-      background:rgba(239,68,68,.25);
-      border:1px solid rgba(239,68,68,.55);
-      box-shadow:0 0 0 2px rgba(0,0,0,.18);
+    .wrap{max-width:1100px;margin:0 auto}
+    .grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:20px;padding:30px;padding-bottom:120px;
     }
-    .occDot.on{
-      background:rgba(239,68,68,.92);
-      border-color:rgba(239,68,68,.95);
+    .card{
+      background:var(--card);border:1px solid var(--line);border-radius:14px;
+      padding:20px;cursor:pointer;transition:all .2s ease;min-height:120px;
+      display:flex;gap:14px;align-items:flex-start;
+    }
+    .card:hover{
+      transform:translateY(-6px);border-color:var(--accent);
+      box-shadow:0 0 18px var(--accent2);
+    }
+    .card i{font-size:26px;color:var(--accent);margin-top:2px}
+    .card h3{margin:0 0 6px}
+    .card p{margin:0;font-size:14px;color:#bbb;line-height:1.35}
+    .card small{display:block;margin-top:8px;color:#7f8aa3;font-size:12px}
+
+    .pillbar{
+      display:flex;gap:10px;flex-wrap:wrap;justify-content:center;
+      padding:0 18px 18px;
+    }
+    .pill{
+      border:1px solid var(--line);background:rgba(255,255,255,.04);
+      border-radius:999px;padding:8px 12px;font-size:12px;color:var(--muted);
+      display:flex;gap:8px;align-items:center;
     }
 
-    /* Confermato */
-    .confirmRow{
-      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-      margin-top:2px;
+    footer{
+      position:fixed;bottom:0;left:0;right:0;background:var(--bg);
+      border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:14px 0;
     }
-    .confirmTag{
-      display:inline-flex; align-items:center; gap:6px;
-      border:1px solid var(--line);
-      background:rgba(0,0,0,.18);
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:12px;
-      color:var(--muted);
+    footer button{
+      background:none;border:none;color:var(--muted);font-size:12px;
+      display:flex;flex-direction:column;align-items:center;cursor:pointer;
     }
-    .confirmTag input{transform:scale(1.1);margin:0}
-    .confirmTag b{color:var(--text);font-weight:900}
+    footer button i{font-size:18px;margin-bottom:4px}
+    footer button:hover{color:var(--accent)}
 
-    /* Modalità compatta per ridurre scroll */
-    #weeklyPlannerCard.weeklyCompact table.weekly th,
-    #weeklyPlannerCard.weeklyCompact table.weekly td{padding:7px}
-    #weeklyPlannerCard.weeklyCompact .ch{padding:5px 8px}
-    #weeklyPlannerCard.weeklyCompact .cellNote{min-height:30px}
-  </style>
+    /* Modal setup */
+    .modalBackdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;
+      padding:18px;z-index:50;
+    }
+    .modal{
+      width:min(920px,100%);background:#0f1522;border:1px solid #2a3347;border-radius:16px;
+      box-shadow:0 20px 80px rgba(0,0,0,.55);overflow:hidden;
+    }
+    .modalHeader{
+      padding:14px 16px;border-bottom:1px solid #2a3347;display:flex;justify-content:space-between;align-items:center;gap:12px;
+    }
+    .modalHeader strong{letter-spacing:.4px}
+    .modalHeader button{
+      background:rgba(255,255,255,.06);border:1px solid #2a3347;color:#fff;border-radius:10px;padding:8px 10px;cursor:pointer;
+    }
+    .modalBody{padding:16px;display:grid;gap:14px}
+    .row{display:grid;grid-template-columns:1fr 2fr;gap:12px}
+    @media (max-width:820px){.row{grid-template-columns:1fr}}
+    label{font-size:12px;color:#9fb0c3}
+    input[type="text"], textarea{
+      width:100%;background:rgba(0,0,0,.25);border:1px solid #2a3347;color:#fff;border-radius:12px;padding:10px;outline:none;
+    }
+    textarea{min-height:80px;resize:vertical}
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      background:rgba(0,115,192,.18);border:1px solid rgba(0,115,192,.55);color:#fff;
+      padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:700;font-size:12px;
+    }
+    .btn.secondary{background:rgba(255,255,255,.06);border:1px solid #2a3347}
+    .hint{font-size:12px;color:#9fb0c3;line-height:1.45}
+    .sep{height:1px;background:#2a3347;margin:6px 0}
 
-
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=70WoeJ_dtwIjN-wlANwV93G1brMjahMXAMcQ15cx1K2jzr1Sn53uUNpoLXt3RydmjTtVL-tC8tUnQCc6m2lhm1kPTgvCECui7NVaslEoFUs" charset="UTF-8"></script>
-  <style>
-    :root{--bg:#0b0f14;--card:#121925;--muted:#9fb0c3;--text:#e9f0f7;--accent:#4dd4ff;--good:#22c55e;--warn:#f59e0b;--bad:#ef4444;--line:#223044;}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#070a0f,#0b0f14);color:var(--text)}
-    a{color:var(--accent);text-decoration:none}
-    .wrap{max-width:1080px;margin:0 auto;padding:18px}
-    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;border:1px solid var(--line);background:rgba(18,25,37,.72);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.35);position:sticky;top:0;backdrop-filter:blur(10px);z-index:10}
-    .title{display:flex;flex-direction:column;gap:2px}
-    .title h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
-    .title .sub{font-size:12px;color:var(--muted)}
-    .pillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .pill{padding:8px 10px;border-radius:999px;background:rgba(15,34,51,.9);border:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
-    .dot{width:8px;height:8px;border-radius:999px;background:var(--warn)}
-    .btn{background:rgba(77,212,255,.16);border:1px solid rgba(77,212,255,.35);color:var(--text);padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:650;font-size:12px}
-    .btn:hover{filter:brightness(1.08)}
-    .btn.secondary{background:rgba(255,255,255,.06);border:1px solid var(--line)}
-    .grid{display:grid;gap:12px;margin-top:12px}
-    @media (min-width:980px){.grid{grid-template-columns:1.2fr .8fr}}
-    .card{background:rgba(18,25,37,.72);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-    .card h2{margin:0 0 8px 0;font-size:14px}
-    .muted{color:var(--muted);font-size:12px;line-height:1.4}
-    .sectiontitle{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .badge{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)}
-    .timeline{display:grid;gap:10px;margin-top:10px}
-    .block{border:1px solid var(--line);border-radius:12px;padding:12px;background:rgba(15,34,51,.55)}
-    .blockhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
-    .blockname{font-weight:750;font-size:13px}
-    .time{font-size:12px;color:var(--muted)}
-    .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .chip{background:rgba(15,34,51,.9);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
-    .chip strong{color:var(--text);font-weight:800}
-    .checklist{display:grid;gap:8px;margin-top:10px}
-    .task{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.12)}
-    .task input{margin-top:2px;transform:scale(1.15)}
-    .task .tmain{display:flex;flex-direction:column;gap:2px}
-    .task .tlabel{font-size:13px;font-weight:650}
-    .task .tdesc{font-size:12px;color:var(--muted);line-height:1.35}
-    .task.done{opacity:.75}
-    .task.done .tlabel{text-decoration:line-through}
-    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .row > *{flex:1 1 220px}
-    .field{display:flex;flex-direction:column;gap:6px}
-    .field label{font-size:12px;color:var(--muted)}
-    input[type="text"],input[type="number"],textarea,select{width:100%;background:rgba(0,0,0,.2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px;outline:none}
-    .hr{height:1px;background:var(--line);margin:12px 0}
-    details{border:1px solid var(--line);border-radius:14px;background:rgba(15,34,51,.45);padding:10px 12px}
-    details summary{cursor:pointer;font-weight:800;font-size:13px;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    details summary::-webkit-details-marker{display:none}
-    .accordionContent{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.55}
-    .accordionContent pre{white-space:pre-wrap;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:10px;color:var(--text)}
-    .timer{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
-    .clock{font-size:22px;font-weight:900;letter-spacing:.5px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.22)}
-    .mini{font-size:12px;color:var(--muted)}
-    .table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
-    .table th,.table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left}
-    .table th{color:var(--muted);font-weight:800}
-    .footer{margin-top:16px;color:var(--muted);font-size:12px;text-align:center}
+    /* Tools list */
+    .toolLine{
+      display:grid;grid-template-columns:1.2fr 2fr 44px;gap:10px;align-items:center;
+      padding:10px;border:1px solid #2a3347;border-radius:12px;background:rgba(0,0,0,.16);
+    }
+    .toolLine button{
+      width:44px;height:38px;border-radius:10px;border:1px solid #2a3347;background:rgba(255,255,255,.06);
+      color:#fff;cursor:pointer;
+    }
+    .toolLine button:hover{border-color:var(--accent)}
   </style>
 </head>
 
 <body>
-<div class="wrap">
+  <div class="wrap">
+    <header>
+      <h1>GESTIONALE</h1>
+      <p>Hub operativo — link salvati una volta sola (localStorage) · espandibile per clienti / tool / prompt</p>
+    </header>
 
-  <!-- =========================================================
-       MIGLIORIA IN ALTO: Centro controllo clienti
-       ========================================================= -->
-  <div class="card clientWrap" id="clientCard">
-    <div class="clientHeader">
-      <div class="left">
-        <h2 style="margin:0;font-size:14px">Centro controllo clienti (seleziona prima il cliente)</h2>
-        <div class="sub">
-          Obiettivo: passare da un cliente all’altro senza sbagliare (anche su 2–3 PC).<br>
-          Regola: <b>se non selezioni il cliente, non pubblicare</b>.
+    <div class="pillbar">
+      <div class="pill"><i class="fa-solid fa-calendar-day"></i><span id="today"></span></div>
+      <div class="pill"><i class="fa-solid fa-phone"></i><span id="contactPill">📞 371 370 8294</span></div>
+      <div class="pill"><i class="fa-solid fa-globe"></i><span>realmediapro.it</span></div>
+      <div class="pill"><i class="fa-solid fa-envelope"></i><span>info@realmediapro.it</span></div>
+    </div>
+
+    <section class="grid" id="cards"></section>
+  </div>
+
+  <footer>
+    <button onclick="scrollToTop()"><i class="fa-solid fa-house"></i>Home</button>
+    <button onclick="openStats()"><i class="fa-solid fa-chart-line"></i>Stats</button>
+    <button onclick="openQuickAdd()"><i class="fa-solid fa-plus-circle"></i>Nuovo</button>
+    <button onclick="openTasks()"><i class="fa-solid fa-list-check"></i>Task</button>
+    <button onclick="openSetup()"><i class="fa-solid fa-gear"></i>Setup</button>
+  </footer>
+
+  <!-- SETUP MODAL -->
+  <div class="modalBackdrop" id="setupBackdrop">
+    <div class="modal">
+      <div class="modalHeader">
+        <div>
+          <strong>Setup — Link e strumenti</strong>
+          <div class="hint">Qui inserisci i link UNA VOLTA. Da ora in poi la dashboard li usa automaticamente.</div>
         </div>
+        <button onclick="closeSetup()"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div class="clientControls">
-        <button class="miniBtn" id="addClientBtn">+ Aggiungi cliente</button>
-        <button class="miniBtn" id="editClientBtn">Modifica</button>
-        <button class="miniBtn" id="deleteClientBtn">Elimina</button>
-      </div>
-    </div>
 
-    <div class="row" style="margin-top:10px">
-      <div class="field">
-        <label>Cliente attivo</label>
-        <select id="activeClientSelect"></select>
-      </div>
-      <div class="field">
-        <label>Settore (cambia il tono)</label>
-        <select id="activeClientSector" disabled>
-          <option value="">—</option>
-          <option value="immobiliare">Immobiliare</option>
-          <option value="ristorante">Ristorante</option>
-          <option value="generico">Generico</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Stato</label>
-        <div class="clientBadge" id="activeClientBadge">Cliente attivo: <strong>NESSUNO</strong></div>
-      </div>
-    </div>
-
-    <div id="clientDanger" class="dangerBar" style="display:none">
-      <div class="barTitle">⚠️ STOP: nessun cliente selezionato</div>
-      <div class="barSub">Seleziona un cliente sopra. Poi usa i bottoni rapidi.</div>
-    </div>
-
-    <div id="clientWarn" class="warnBar" style="display:none">
-      <div class="barTitle">Attenzione: mancano alcuni link</div>
-      <div class="barSub" id="clientWarnText"></div>
-    </div>
-
-    <div class="btnRow">
-      <button class="quickBtn" id="q_fb">Apri Facebook</button>
-      <button class="quickBtn" id="q_ig">Apri Instagram</button>
-      <button class="quickBtn" id="q_tt">Apri TikTok</button>
-      <button class="quickBtn" id="q_yt">Apri YouTube</button>
-      <button class="quickBtn secondary" id="q_meta">Meta Business Suite</button>
-      <button class="quickBtn secondary" id="q_canva">Canva</button>
-      <button class="quickBtn secondary" id="q_ytstudio">YouTube Studio</button>
-      <button class="quickBtn" id="q_pdf">Pagina PDF + Consenso</button>
-      <button class="quickBtn secondary" id="q_gpt">ChatGPT cliente</button>
-    </div>
-
-    <div class="miniGrid">
-      <div class="noteBox">
-        <div class="field">
-          <label>Appunti (incolla qui tutto: brief, appunti, link, testo grezzo, ecc.)</label>
-          <textarea id="clientNotes" placeholder="Incolla qui gli appunti..."></textarea>
+      <div class="modalBody">
+        <div class="row">
+          <div>
+            <label>Contatti (testo breve)</label>
+            <input type="text" id="contactsText" placeholder="📞 371 370 8294 · realmediapro.it · info@realmediapro.it" />
+            <div class="hint" style="margin-top:8px">
+              Questo testo lo puoi riusare come “blocco contatti” rapido nelle caption.
+            </div>
+          </div>
+          <div>
+            <label>Blocco contatti esteso (per copia/incolla)</label>
+            <textarea id="contactsBlock" placeholder="📞 371 370 8294&#10;🌐 www.realmediapro.it&#10;📧 info@realmediapro.it&#10;📩 DM per info e collaborazioni"></textarea>
+          </div>
         </div>
+
+        <div class="sep"></div>
+
+        <div class="hint"><strong>Sezioni principali</strong> (card fisse)</div>
+
+        <div class="row">
+          <div>
+            <label>Digital Sale</label>
+            <input type="text" id="link_digitalsale" placeholder="https://..." />
+          </div>
+          <div>
+            <label>Contenuti (Canva)</label>
+            <input type="text" id="link_contenuti" placeholder="https://www.canva.com/..." />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Acquisizione</label>
+            <input type="text" id="link_acquisizione" placeholder="https://..." />
+          </div>
+          <div>
+            <label>SOP 01</label>
+            <input type="text" id="link_sop01" placeholder="sop01.html (consigliato) oppure URL completo" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Lead (opzionale)</label>
+            <input type="text" id="link_lead" placeholder="https://..." />
+          </div>
+          <div>
+            <label>Cartella Prompt / ChatGPT (link)</label>
+            <input type="text" id="link_prompts" placeholder="https://chatgpt.com/..." />
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="hint"><strong>Strumenti extra</strong> (aggiungibili — Meta Business Suite, TikTok Studio, YouTube Studio, ecc.)</div>
+        <div id="toolsList" style="display:grid;gap:10px"></div>
 
         <div class="btnRow">
-          <button class="miniBtn" id="mkPromptImm">Crea prompt (Immobiliare)</button>
-          <button class="miniBtn" id="mkPromptRisto">Crea prompt (Ristorante)</button>
-          <button class="miniBtn" id="mkPromptNeutro">Crea prompt (Neutro)</button>
-          <button class="miniBtn" id="copyPromptBtn">Copia prompt</button>
+          <button class="btn secondary" onclick="addTool()">+ Aggiungi tool</button>
+          <button class="btn secondary" onclick="exportConfig()">Esporta config (.json)</button>
+          <button class="btn secondary" onclick="importConfig()">Importa config</button>
+          <button class="btn" onclick="saveConfig()">Salva</button>
         </div>
 
-        <!-- RICHIESTA UTENTE: niente output a schermo -->
-        <div id="promptOut" style="display:none"></div>
-        <pre id="promptText" style="display:none"></pre>
-      </div>
-
-      <div>
-        <details open>
-          <summary><span>Guida facilissima (per chi è nuovo)</span><span class="badge">bimbo 10 anni</span></summary>
-          <div class="accordionContent">
-            <div style="color:var(--text);font-weight:900;margin-bottom:6px">“Controllo gruppi (Facebook/zone)” – cosa fai?</div>
-            <div>
-              1) Clicca <b>Apri Facebook</b> (del cliente).<br>
-              2) Nella barra di ricerca scrivi 1 parola chiave (es: “case Torino”, “vendita casa”, “Sant’Ambrogio”, “Val di Susa”).<br>
-              3) Apri i gruppi, leggi regole, salva post utili.<br>
-              4) Pubblica 2–3 contenuti utili (non aggressivi).<br>
-              5) Se chiedono info → manda il <b>link PDF + consenso</b>.
-            </div>
-
-            <div style="margin-top:10px;color:var(--text);font-weight:900;margin-bottom:6px">“Fonte del giorno” – cosa significa?</div>
-            <div>
-              È <b>da dove prendi i contatti oggi</b>. Scegline <b>UNA</b> e usa solo quella per tutta la sessione.
-            </div>
-
-            <div style="margin-top:10px;color:var(--text);font-weight:900;margin-bottom:6px">“Script usato” – cosa significa?</div>
-            <div>
-              È <b>la frase base</b> che userai oggi per scrivere ai contatti. (Messaggio standard + 1 riga personalizzata.)
-            </div>
-          </div>
-        </details>
-
-        <details>
-          <summary><span>Export / Import clienti (per lavorare su più PC)</span><span class="badge">multi-PC</span></summary>
-          <div class="accordionContent">
-            <div class="btnRow">
-              <button class="miniBtn" id="exportClientsBtn">Esporta clienti (.json)</button>
-              <label class="miniBtn" style="cursor:pointer">
-                Importa clienti (.json)
-                <input type="file" id="importClientsFile" accept="application/json" style="display:none">
-              </label>
-            </div>
-            <div class="hintLine" style="margin-top:8px">
-              Consiglio: esporta dal PC 1 → importi su PC 2/3. Così hai sempre gli stessi clienti e link.
-            </div>
-          </div>
-        </details>
-      </div>
-    </div>
-
-    <!-- Form aggiungi/modifica cliente -->
-    <div class="clientForm" id="clientForm">
-      <div class="sectiontitle">
-        <h2 style="margin:0;font-size:13px" id="clientFormTitle">Nuovo cliente</h2>
-        <span class="badge">offline · localStorage</span>
-      </div>
-
-      <div class="row">
-        <div class="field">
-          <label>Nome cliente</label>
-          <input type="text" id="cf_name" placeholder="Es: La Sacra Immobiliare">
+        <div class="hint">
+          Nota: i link vengono salvati sul dispositivo (localStorage). Se vuoi condividerli con altri PC/collaboratori usa “Esporta config” e poi “Importa”.
         </div>
-        <div class="field">
-          <label>Settore</label>
-          <select id="cf_sector">
-            <option value="immobiliare">Immobiliare</option>
-            <option value="ristorante">Ristorante</option>
-            <option value="generico">Generico</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field"><label>Facebook</label><input type="text" id="cf_fb" placeholder="https://facebook.com/..."></div>
-        <div class="field"><label>Instagram</label><input type="text" id="cf_ig" placeholder="https://instagram.com/..."></div>
-      </div>
-
-      <div class="row">
-        <div class="field"><label>TikTok</label><input type="text" id="cf_tt" placeholder="https://tiktok.com/@..."></div>
-        <div class="field"><label>YouTube</label><input type="text" id="cf_yt" placeholder="https://youtube.com/@..."></div>
-      </div>
-
-      <div class="row">
-        <div class="field"><label>Meta Business Suite</label><input type="text" id="cf_meta" placeholder="https://business.facebook.com/..."></div>
-        <div class="field"><label>Canva</label><input type="text" id="cf_canva" placeholder="https://www.canva.com/..."></div>
-      </div>
-
-      <div class="row">
-        <div class="field"><label>YouTube Studio</label><input type="text" id="cf_ytstudio" placeholder="https://studio.youtube.com/..."></div>
-        <div class="field"><label>Pagina PDF + Consenso</label><input type="text" id="cf_pdf" placeholder="https://... (landing + modulo consenso)"></div>
-      </div>
-
-      <div class="row">
-        <div class="field"><label>ChatGPT cliente (link chat dedicata)</label><input type="text" id="cf_gpt" placeholder="https://chatgpt.com/c/..."></div>
-        <div class="field"><label>Nota interna</label><input type="text" id="cf_note" placeholder="Es: tono serio, zona, target..."></div>
-      </div>
-
-      <div class="btnRow">
-        <button class="miniBtn" id="saveClientBtn">Salva</button>
-        <button class="miniBtn" id="cancelClientBtn">Annulla</button>
       </div>
     </div>
   </div>
 
-  <!-- === MIGLIORIA IN ALTO: Planner Settimanale Social (Lun–Dom) === -->
-  <div class="card weeklyWrap" id="weeklyPlannerCard">
-    <div class="weeklyHeader">
-      <div class="left">
-        <h2 style="margin:0;font-size:14px">Schema Settimanale Social (Lun → Dom)</h2>
-        <div class="sub" id="weekLabel">Settimana:</div>
-      </div>
-      <div class="weeklyControls">
-        <button class="miniBtn" id="resetWeekBtn">Reset settimana</button>
-        <button class="miniBtn" id="toggleNotesBtn">Mostra/Nascondi note</button>
-      </div>
-    </div>
-    <div class="hintLine" style="margin-top:8px">
-      Spunta i canali per ogni fascia oraria. Dati salvati in locale (localStorage) per settimana.
-    </div>
-
-    <div class="weeklyTableWrap">
-      <table class="weekly" id="weeklyTable">
-        <thead id="weeklyThead"></thead>
-        <tbody id="weeklyTbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- =========================================
-       SOP 01 (codice originale, non toccato)
-       ========================================= -->
-  <div class="topbar">
-    <div class="title">
-      <h1>Dashboard Operativa — SOP 01 (v1.4)</h1>
-      <div class="sub">09:00 Presidio+PDF → 09:30–12:30 Acquisizione → 15:30–18:30 Follow-up → 18:30–19:00 Pianificazione</div>
-    </div>
-    <div class="pillrow">
-      <div class="pill"><span class="dot" id="dayDot"></span><span id="todayLabel">Data</span></div>
-      <div class="pill"><span>Stato giorno:</span> <strong id="dayState">NON COMPLETATO</strong></div>
-      <button class="btn secondary" id="resetDayBtn">Reset giornata</button>
-      <button class="btn" id="exportBtn">Esporta contatti (.csv)</button>
-    </div>
-  </div>
-
-  <div class="grid">
-    <div class="card">
-      <div class="sectiontitle">
-        <h2>Organigramma orario 09:00–19:00</h2>
-        <span class="badge">Checklist + timer + KPI</span>
-      </div>
-      <div class="muted">Spunta tutto. I dati restano salvati sul dispositivo (localStorage).</div>
-
-      <div class="timeline">
-        <div class="block">
-          <div class="blockhead">
-            <div>
-              <div class="blockname">Avvio — Presidio Digitale + Sistema PDF</div>
-              <div class="time">09:00 – 09:30 · SOP Cap. 0 + 0A</div>
-            </div>
-            <div class="kpis">
-              <div class="chip">Target <strong>4–8 contenuti</strong></div>
-              <div class="chip">Obiettivo <strong>visibilità+contatti</strong></div>
-            </div>
-          </div>
-          <div class="checklist" id="cl_social"></div>
-          <div class="row">
-            <div class="field"><label>Contenuti pubblicati oggi (#)</label><input type="number" min="0" id="kpi_posts" /></div>
-            <div class="field"><label>Richieste PDF oggi (#)</label><input type="number" min="0" id="kpi_pdf_requests" /></div>
-          </div>
-        </div>
-
-        <div class="block">
-          <div class="blockhead">
-            <div>
-              <div class="blockname">Core — Acquisizione (Mattino)</div>
-              <div class="time">09:30 – 12:30 · SOP Cap. 2.1 + Cap. 4</div>
-            </div>
-            <div class="kpis">
-              <div class="chip">Target <strong>30–40 contatti</strong></div>
-              <div class="chip">Regola <strong>1 fonte/sessione</strong></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Fonte del giorno</label>
-              <select id="morning_source">
-                <option value="">Seleziona…</option><option>AMV</option><option>AV</option><option>TMK TOP</option><option>VDP</option><option>WARM (rete calda)</option><option>PDF Leads (Cap. 0A)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Script usato</label>
-              <select id="morning_script">
-                <option value="">Seleziona…</option><option>Script 01 — Freddo base</option><option>Script 02 — AMV</option><option>Script 03 — AV</option><option>Script 04 — TMK TOP</option><option>Script 05 — VDP</option><option>Script 06 — Rete calda</option>
-              </select>
-            </div>
-            <div class="field"><label>Contatti mattino (#)</label><input type="number" min="0" id="kpi_morning_contacts" /></div>
-          </div>
-
-          <div class="hr"></div>
-          <div class="sectiontitle"><h2 style="margin:0;font-size:13px">Timer sessioni 50/10</h2><span class="badge">Focus → Pausa</span></div>
-          <div class="timer">
-            <div class="clock" id="clock">50:00</div>
-            <div>
-              <div class="mini" id="timerMode">Pronto (Focus 50')</div>
-              <div class="mini">Avvia Focus, poi Pausa. Ripeti 2 volte.</div>
-            </div>
-            <button class="btn" id="startFocusBtn">Avvia Focus</button>
-            <button class="btn secondary" id="startBreakBtn">Avvia Pausa</button>
-            <button class="btn secondary" id="stopBtn">Stop</button>
-          </div>
-
-          <div class="checklist" id="cl_morning"></div>
-        </div>
-
-        <div class="block">
-          <div class="blockhead">
-            <div>
-              <div class="blockname">Monetizzazione — Follow-up + Appuntamenti</div>
-              <div class="time">15:30 – 18:30 · SOP Cap. 2.2 + Cap. 7</div>
-            </div>
-            <div class="kpis">
-              <div class="chip">Target <strong>10–20 follow-up</strong></div>
-              <div class="chip">Focus <strong>avanzare relazioni</strong></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field"><label>Follow-up completati (#)</label><input type="number" min="0" id="kpi_followups" /></div>
-            <div class="field"><label>Appuntamenti fissati (#)</label><input type="number" min="0" id="kpi_appointments" /></div>
-            <div class="field"><label>Note operative</label><input type="text" id="afternoon_notes" placeholder="1–3 righe" /></div>
-          </div>
-
-          <div class="checklist" id="cl_afternoon"></div>
-        </div>
-
-        <div class="block">
-          <div class="blockhead">
-            <div>
-              <div class="blockname">Chiusura — Pianificazione domani</div>
-              <div class="time">18:30 – 19:00 · SOP Cap. 3.1</div>
-            </div>
-            <div class="kpis">
-              <div class="chip">Regola <strong>domani già deciso</strong></div>
-              <div class="chip">Output <strong>liste+script</strong></div>
-            </div>
-          </div>
-
-          <div class="row">
-            <div class="field">
-              <label>Fonte domani (UNA)</label>
-              <select id="tomorrow_source">
-                <option value="">Seleziona…</option><option>AMV</option><option>AV</option><option>TMK TOP</option><option>VDP</option><option>WARM (rete calda)</option><option>PDF Leads (Cap. 0A)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Script domani</label>
-              <select id="tomorrow_script">
-                <option value="">Seleziona…</option><option>Script 01 — Freddo base</option><option>Script 02 — AMV</option><option>Script 03 — AV</option><option>Script 04 — TMK TOP</option><option>Script 05 — VDP</option><option>Script 06 — Rete calda</option>
-              </select>
-            </div>
-            <div class="field"><label>Lista contatti domani (note)</label><input type="text" id="tomorrow_list" /></div>
-          </div>
-
-          <div class="checklist" id="cl_planning"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="sectiontitle"><h2>PDF/Database + SOP integrale</h2><span class="badge">Offline · localStorage</span></div>
-      <div class="muted">Salva lead (Cap. 0A), genera caption e consulta SOP integrale.</div>
-
-      <div class="hr"></div>
-
-      <h2 style="font-size:13px;margin:0 0 8px">Lead PDF (Cap. 0A)</h2>
-      <div class="row">
-        <div class="field"><label>Titolo PDF</label><input type="text" id="pdf_title" placeholder="Es: Checklist venditore"/></div>
-        <div class="field"><label>Link PDF</label><input type="text" id="pdf_link" placeholder="https://.../pdf.pdf"/></div>
-      </div>
-      <div class="row">
-        <div class="field"><label>Telefono contatto</label><input type="text" id="lead_phone" placeholder="+39..."/></div>
-        <div class="field">
-          <label>Consenso (obbligatorio)</label>
-          <select id="lead_consent"><option value="no">NO</option><option value="si">SÌ — autorizza a ricevere materiale informativo e promozionale</option></select>
-        </div>
-      </div>
-      <button class="btn" id="saveLeadBtn">Salva lead</button>
-      <button class="btn secondary" id="genCaptionBtn">Genera caption (post)</button>
-
-      <div class="task" style="margin-top:10px">
-        <input type="checkbox" disabled checked>
-        <div class="tmain">
-          <div class="tlabel">Dicitura consenso (GDPR)</div>
-          <div class="tdesc">“Autorizzo al trattamento dei miei dati personali e a ricevere materiale informativo e promozionale ai sensi del Regolamento UE 679/2016 (GDPR).”</div>
-        </div>
-      </div>
-
-      <div class="task" id="captionBox" style="display:none; margin-top:10px"></div>
-
-      <div class="hr"></div>
-
-      <h2 style="font-size:13px;margin:0 0 8px">Ultimi contatti salvati (locale)</h2>
-      <table class="table" id="leadsTable">
-        <thead><tr><th>Telefono</th><th>Consenso</th><th>Data</th></tr></thead>
-        <tbody></tbody>
-      </table>
-
-      <div class="hr"></div>
-
-      <details open>
-        <summary><span>SOP 01 — Testo integrale (v1.4)</span><span class="badge">accordion</span></summary>
-        <div class="accordionContent" id="sopText"></div>
-      </details>
-    </div>
-  </div>
-
-  <div class="footer">Dashboard SOP — offline, dati salvati sul dispositivo.</div>
-</div>
-
-<!-- =========================================================
-     JS: Planner Settimanale Social (Lun–Dom)
-     ========================================================= -->
 <script>
-(function(){
-  const WEEKLY_KEY = "weekly_social_planner_v1";
-  const DAYS = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
-  const SLOTS = ["08:00","10:00","12:00","14:00","16:00","18:00","20:00"];
-  const CHANNELS = [
-    { id:"fb",  label:"FB" },
-    { id:"ig",  label:"IG" },
-    { id:"tt",  label:"TT" },
-    { id:"yt",  label:"YT" },
-  ];
-
-  /* === IMPLEMENTA: funzioni extra planner (confermato / pallino rosso / compatta / filtri / export immagine / spostamento card) === */
-  function hasAnyLoaded(state, day, slot){
-    // slot "caricato" se almeno un canale è spuntato oppure se è confermato oppure se c'è una nota
-    const confKey = `${day}|${slot}|confirmed`;
-    const noteKey = `${day}|${slot}|note`;
-    if(state[confKey]) return true;
-    if((state[noteKey] || "").trim()) return true;
-    for(const ch of CHANNELS){
-      const k = `${day}|${slot}|${ch.id}`;
-      if(state[k]) return true;
-    }
-    return false;
-  }
-
-  function ensurePlannerControls(){
-    const controls = el("weeklyPlannerCard")?.querySelector(".weeklyControls");
-    if(!controls) return;
-
-    if(!el("toggleLoadedBtn")){
-      const b = document.createElement("button");
-      b.className = "miniBtn";
-      b.id = "toggleLoadedBtn";
-      b.type = "button";
-      b.textContent = "Mostra solo slot carichi";
-      controls.appendChild(b);
-    }
-
-    if(!el("toggleCompactBtn")){
-      const b = document.createElement("button");
-      b.className = "miniBtn";
-      b.id = "toggleCompactBtn";
-      b.type = "button";
-      b.textContent = "Compatta";
-      controls.appendChild(b);
-    }
-
-    if(!el("exportWeekImgBtn")){
-      const b = document.createElement("button");
-      b.className = "miniBtn";
-      b.id = "exportWeekImgBtn";
-      b.type = "button";
-      b.textContent = "Esporta immagine (PNG)";
-      controls.appendChild(b);
-    }
-  }
-
-  function applyPlannerModeUI(state){
-    const card = el("weeklyPlannerCard");
-    if(!card) return;
-
-    const compact = state.__compact === true;
-    if(compact) card.classList.add("weeklyCompact");
-    else card.classList.remove("weeklyCompact");
-
-    const toggleLoadedBtn = el("toggleLoadedBtn");
-    if(toggleLoadedBtn){
-      const onlyLoaded = state.__onlyLoaded === true;
-      toggleLoadedBtn.textContent = onlyLoaded ? "Mostra tutti gli slot" : "Mostra solo slot carichi";
-    }
-
-    const toggleCompactBtn = el("toggleCompactBtn");
-    if(toggleCompactBtn){
-      toggleCompactBtn.textContent = compact ? "Normale" : "Compatta";
-    }
-  }
-
-  function applyOnlyLoadedFilter(state){
-    const tbody = el("weeklyTbody");
-    if(!tbody) return;
-
-    const onlyLoaded = state.__onlyLoaded === true;
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-    rows.forEach(tr=>{
-      const slotTd = tr.querySelector("td.slotHead");
-      const slot = slotTd ? slotTd.textContent.trim() : "";
-      if(!onlyLoaded){
-        tr.style.display = "";
-        return;
-      }
-
-      // per quella riga, se almeno un giorno ha qualcosa caricato, la riga resta
-      let any = false;
-      for(const day of DAYS){
-        if(hasAnyLoaded(state, day, slot)){ any = true; break; }
-      }
-      tr.style.display = any ? "" : "none";
-    });
-  }
-
-  function injectCellIndicatorsAndConfirmed(state){
-    const tbody = el("weeklyTbody");
-    if(!tbody) return;
-
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-    rows.forEach(tr=>{
-      const tds = Array.from(tr.querySelectorAll("td"));
-      if(tds.length < 2) return;
-
-      const slot = (tds[0]?.textContent || "").trim();
-
-      // celle giorno: da index 1 in poi
-      for(let i=1; i<tds.length; i++){
-        const day = DAYS[i-1];
-        const td = tds[i];
-        const cell = td.querySelector(".cell");
-        if(!cell) continue;
-
-        // pallino rosso (occupato/non libero)
-        let dot = cell.querySelector(".occDot");
-        if(!dot){
-          dot = document.createElement("span");
-          dot.className = "occDot";
-          cell.appendChild(dot);
-        }
-        const occupied = hasAnyLoaded(state, day, slot);
-        if(occupied) dot.classList.add("on");
-        else dot.classList.remove("on");
-
-        // riga "Confermato" (checkbox)
-        let cRow = cell.querySelector(".confirmRow");
-        if(!cRow){
-          cRow = document.createElement("div");
-          cRow.className = "confirmRow";
-
-          const label = document.createElement("label");
-          label.className = "confirmTag";
-
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.setAttribute("data-ckey", `${day}|${slot}|confirmed`);
-
-          const txt = document.createElement("b");
-          txt.textContent = "Confermato";
-
-          label.appendChild(cb);
-          label.appendChild(txt);
-          cRow.appendChild(label);
-
-          // inserisci subito sotto i canali
-          const channels = cell.querySelector(".channels");
-          if(channels && channels.parentNode === cell){
-            channels.insertAdjacentElement("afterend", cRow);
-          }else{
-            cell.appendChild(cRow);
-          }
-        }
-
-        const cb = cRow.querySelector('input[type="checkbox"][data-ckey]');
-        if(cb){
-          const key = cb.getAttribute("data-ckey");
-          cb.checked = !!state[key];
-          cb.onchange = () => {
-            const s = loadWeek();
-            s[key] = cb.checked;
-            saveWeek(s);
-            // aggiorna indicatori subito senza rerender completo
-            injectCellIndicatorsAndConfirmed(s);
-            applyOnlyLoadedFilter(s);
-            applyPlannerModeUI(s);
-          };
-        }
-      }
-    });
-  }
-
-  function exportPlannerAsPng(){
-    const card = el("weeklyPlannerCard");
-    const tableWrap = card?.querySelector(".weeklyTableWrap");
-    const table = el("weeklyTable");
-    const label = el("weekLabel");
-    if(!card || !tableWrap || !table) return;
-
-    // Crea markup "pulito" per l'export (solo planner)
-    const cloneWrap = document.createElement("div");
-    cloneWrap.style.width = table.offsetWidth + "px";
-    cloneWrap.style.padding = "14px";
-    cloneWrap.style.background = "#0b0f14";
-    cloneWrap.style.color = "#e9f0f7";
-    cloneWrap.style.fontFamily = "system-ui,-apple-system,Segoe UI,Roboto,Arial";
-
-    const title = document.createElement("div");
-    title.style.fontWeight = "900";
-    title.style.fontSize = "14px";
-    title.style.marginBottom = "6px";
-    title.textContent = "Schema Settimanale Social (Lun → Dom)";
-    cloneWrap.appendChild(title);
-
-    if(label){
-      const sub = document.createElement("div");
-      sub.style.fontSize = "12px";
-      sub.style.color = "#9fb0c3";
-      sub.style.marginBottom = "10px";
-      sub.textContent = label.textContent || "";
-      cloneWrap.appendChild(sub);
-    }
-
-    const tableClone = table.cloneNode(true);
-    // ripristina header non-sticky per export
-    tableClone.querySelectorAll("thead th").forEach(th=>{
-      th.style.position = "static";
-      th.style.top = "auto";
-      th.style.zIndex = "auto";
-    });
-
-    // rimuovi scrollbar wrapper, metti direttamente la tabella
-    cloneWrap.appendChild(tableClone);
-
-    // stylesheet minimo per resa simile
-    const style = document.createElement("style");
-    style.textContent = `
-      table{width:100%;border-collapse:separate;border-spacing:0}
-      th,td{border-bottom:1px solid #223044;border-right:1px solid #223044;padding:10px;vertical-align:top}
-      th:last-child,td:last-child{border-right:none}
-      tr:last-child td{border-bottom:none}
-      thead th{background:rgba(18,25,37,.92)}
-      .slotHead{width:92px;color:#9fb0c3;font-weight:800;font-size:12px}
-      .dayHead{font-size:12px;font-weight:900;letter-spacing:.2px;color:#e9f0f7}
-      .cell{position:relative;display:flex;flex-direction:column;gap:8px}
-      .channels{display:flex;gap:8px;flex-wrap:wrap}
-      .ch{display:flex;gap:6px;align-items:center;background:rgba(0,0,0,.22);border:1px solid #223044;border-radius:999px;padding:6px 10px;font-size:12px;color:#9fb0c3}
-      .ch b{color:#e9f0f7;font-weight:900}
-      .cellNote{width:100%;min-height:38px;resize:none;background:rgba(0,0,0,.2);border:1px solid #223044;color:#e9f0f7;border-radius:12px;padding:10px;outline:none}
-      .confirmRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
-      .confirmTag{display:inline-flex;align-items:center;gap:6px;border:1px solid #223044;background:rgba(0,0,0,.18);border-radius:999px;padding:6px 10px;font-size:12px;color:#9fb0c3}
-      .confirmTag b{color:#e9f0f7;font-weight:900}
-      .occDot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:999px;background:rgba(239,68,68,.25);border:1px solid rgba(239,68,68,.55);box-shadow:0 0 0 2px rgba(0,0,0,.18)}
-      .occDot.on{background:rgba(239,68,68,.92);border-color:rgba(239,68,68,.95)}
-      tbody tr:nth-child(even) td{background:rgba(255,255,255,.03)}
-      tbody tr:nth-child(odd) td{background:rgba(255,255,255,.015)}
-      tbody td:nth-child(even){background:rgba(0,0,0,.10)}
-      thead th:nth-child(even){background:rgba(18,25,37,.88)}
-      thead th:nth-child(odd){background:rgba(18,25,37,.92)}
-    `;
-    cloneWrap.insertBefore(style, cloneWrap.firstChild);
-
-    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-    const width = table.offsetWidth + 28;
-    const height = table.offsetHeight + 90;
-    svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
-    svg.setAttribute("width", width);
-    svg.setAttribute("height", height);
-
-    const foreign = document.createElementNS("http://www.w3.org/2000/svg","foreignObject");
-    foreign.setAttribute("x","0");
-    foreign.setAttribute("y","0");
-    foreign.setAttribute("width","100%");
-    foreign.setAttribute("height","100%");
-    foreign.appendChild(cloneWrap);
-    svg.appendChild(foreign);
-
-    const xml = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([xml], {type:"image/svg+xml;charset=utf-8"});
-    const url = URL.createObjectURL(svgBlob);
-
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-
-      URL.revokeObjectURL(url);
-
-      canvas.toBlob((blob)=>{
-        if(!blob) return;
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        const stamp = weekKey();
-        a.download = `planner_settimanale_${stamp}.png`;
-        a.click();
-        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
-      }, "image/png");
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      alert("Export immagine non riuscito su questo browser. (Suggerimento: prova Chrome/Edge)");
-    };
-    img.src = url;
-  }
-
-  function movePlannerBelowQuickButtons(){
-    const card = el("weeklyPlannerCard");
-    const clientCard = el("clientCard");
-    if(!card || !clientCard) return;
-
-    const btnRow = clientCard.querySelector(".btnRow");
-    if(!btnRow) return;
-
-    // inserisci la card subito dopo la riga dei pulsanti rapidi
-    if(btnRow.parentNode){
-      btnRow.insertAdjacentElement("afterend", card);
-    }
-  }
-
-
-  function getMonday(d){
-    const date = new Date(d);
-    const day = date.getDay();
-    const diff = (day === 0 ? -6 : 1) - day;
-    date.setDate(date.getDate() + diff);
-    date.setHours(0,0,0,0);
-    return date;
-  }
-  function isoDate(d){
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${y}-${m}-${dd}`;
-  }
-  function weekKey(){ return isoDate(getMonday(new Date())); }
-
-  function loadWeek(){
-    try{
-      const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
-      return all[weekKey()] || {};
-    }catch(e){ return {}; }
-  }
-  function saveWeek(state){
-    const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
-    all[weekKey()] = state;
-    localStorage.setItem(WEEKLY_KEY, JSON.stringify(all));
-  }
-  function resetWeek(){
-    const all = JSON.parse(localStorage.getItem(WEEKLY_KEY)||"{}");
-    delete all[weekKey()];
-    localStorage.setItem(WEEKLY_KEY, JSON.stringify(all));
-  }
-
-  function el(id){ return document.getElementById(id); }
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, m => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
-
-  function renderPlanner(){
-    const thead = el("weeklyThead");
-    const tbody = el("weeklyTbody");
-    if(!thead || !tbody) return;
-
-    const monday = getMonday(new Date());
-    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
-
-    const label = el("weekLabel");
-    if(label){
-      label.textContent = `Settimana: ${monday.toLocaleDateString("it-IT")} → ${sunday.toLocaleDateString("it-IT")} (chiave: ${weekKey()})`;
-    }
-
-    const state = loadWeek();
-    const showNotes = state.__showNotes !== false;
-
-    thead.innerHTML = "";
-    const trh = document.createElement("tr");
-    trh.innerHTML = `<th class="slotHead">Orario</th>` + DAYS.map(d => `<th><div class="dayHead">${d}</div></th>`).join("");
-    thead.appendChild(trh);
-
-    tbody.innerHTML = "";
-    SLOTS.forEach(slot => {
-      const tr = document.createElement("tr");
-      const tds = [];
-      tds.push(`<td class="slotHead">${slot}</td>`);
-
-      for(let dayIdx=0; dayIdx<7; dayIdx++){
-        const day = DAYS[dayIdx];
-
-        const checks = CHANNELS.map(ch => {
-          const key = `${day}|${slot}|${ch.id}`;
-          const checked = state[key] ? "checked" : "";
-          return `
-            <label class="ch">
-              <input type="checkbox" data-wkey="${key}" ${checked}>
-              <b>${ch.label}</b>
-            </label>
-          `;
-        }).join("");
-
-        const noteKey = `${day}|${slot}|note`;
-        const noteVal = (state[noteKey] ?? "");
-        const noteHtml = showNotes ? `
-          <textarea class="cellNote" placeholder="Nota (es: tema, promo, evento...)" data-nkey="${noteKey}">${escapeHtml(noteVal)}</textarea>
-        ` : ``;
-
-        tds.push(`
-          <td>
-            <div class="cell">
-              <div class="channels">${checks}</div>
-              ${noteHtml}
-            </div>
-          </td>
-        `);
-      }
-
-      tr.innerHTML = tds.join("");
-      tbody.appendChild(tr);
-    });
-
-    tbody.querySelectorAll('input[type="checkbox"][data-wkey]').forEach(cb => {
-      cb.addEventListener("change", () => {
-        const s = loadWeek();
-        s[cb.dataset.wkey] = cb.checked;
-        saveWeek(s);
-        try{ injectCellIndicatorsAndConfirmed(s); applyOnlyLoadedFilter(s); applyPlannerModeUI(s); }catch(e){}
-      });
-    });
-
-    tbody.querySelectorAll('textarea[data-nkey]').forEach(tx => {
-      tx.addEventListener("input", () => {
-        const s = loadWeek();
-        s[tx.dataset.nkey] = tx.value;
-        saveWeek(s);
-        try{ injectCellIndicatorsAndConfirmed(s); applyOnlyLoadedFilter(s); applyPlannerModeUI(s); }catch(e){}
-      });
-    });
-
-    const toggleBtn = el("toggleNotesBtn");
-    if(toggleBtn){
-      toggleBtn.textContent = showNotes ? "Nascondi note" : "Mostra note";
-      toggleBtn.onclick = () => {
-        const s = loadWeek();
-        s.__showNotes = !(s.__showNotes !== false);
-        saveWeek(s);
-        renderPlanner();
-      };
-    }
-
-    const resetBtn = el("resetWeekBtn");
-    if(resetBtn){
-      resetBtn.onclick = () => {
-        if(confirm("Vuoi azzerare SOLO la settimana corrente del planner? (non tocca la SOP giornaliera né i lead)")){
-          resetWeek();
-          renderPlanner();
-        }
-      };
-    }
-
-    /* === IMPLEMENTA: post-render (confermato + pallino rosso + modalità compatta/filtri) === */
-    try{
-      ensurePlannerControls();
-      injectCellIndicatorsAndConfirmed(state);
-      applyOnlyLoadedFilter(state);
-      applyPlannerModeUI(state);
-
-      const toggleLoadedBtn = el("toggleLoadedBtn");
-      if(toggleLoadedBtn){
-        toggleLoadedBtn.onclick = () => {
-          const s = loadWeek();
-          s.__onlyLoaded = !(s.__onlyLoaded === true);
-          saveWeek(s);
-          applyOnlyLoadedFilter(s);
-          applyPlannerModeUI(s);
-        };
-      }
-
-      const toggleCompactBtn = el("toggleCompactBtn");
-      if(toggleCompactBtn){
-        toggleCompactBtn.onclick = () => {
-          const s = loadWeek();
-          s.__compact = !(s.__compact === true);
-          saveWeek(s);
-          applyPlannerModeUI(s);
-        };
-      }
-
-      const exportBtn = el("exportWeekImgBtn");
-      if(exportBtn){
-        exportBtn.onclick = () => exportPlannerAsPng();
-      }
-    }catch(e){}
-
-  }
-
-  window.addEventListener("DOMContentLoaded", renderPlanner);
-
-  /* === IMPLEMENTA: sposta planner sotto i pulsanti rapidi per maggiore controllo === */
-  window.addEventListener("DOMContentLoaded", () => {
-    try{
-      movePlannerBelowQuickButtons();
-      const s = loadWeek();
-      ensurePlannerControls();
-      applyPlannerModeUI(s);
-      applyOnlyLoadedFilter(s);
-      injectCellIndicatorsAndConfirmed(s);
-    }catch(e){}
-  });
-
-})();
-</script>
-
-<!-- =========================================================
-     JS: Centro controllo clienti + Prompt DOWNLOAD .txt
-     ========================================================= -->
-<script>
-(function(){
-  const CLIENTS_KEY = "sop_clients_v1";
-  const ACTIVE_CLIENT_KEY = "sop_active_client_v1";
-  const NOTES_PREFIX = "sop_client_notes_";
-
-  // Telefono unico (tuo contatto)
-  const CONTACT_PHONE = "3713708294";
-
-  const DEFAULT_CLIENTS = [
-    {
-      id: "realmediapro",
-      name: "Real Media Pro",
-      sector: "generico",
-      fb: "https://www.facebook.com/profile.php?id=61550077453442",
-      ig: "https://www.instagram.com/realmediaproagency/",
-      tt: "https://www.tiktok.com/@realmediaproagency",
-      yt: "https://www.youtube.com/@realmediaproagency",
-      meta: "https://business.facebook.com/",
-      canva: "https://www.canva.com/",
-      ytstudio: "https://studio.youtube.com/",
-      pdf: "https://realmediapro.it/",
-      gpt: "https://chatgpt.com/",
-      note: "Agency / tono professionale"
+  const CFG_KEY = "gestionale_cfg_v1";
+
+  const DEFAULT_CFG = {
+    contactsText: "📞 371 370 8294 · realmediapro.it · info@realmediapro.it",
+    contactsBlock: "📞 371 370 8294\n🌐 www.realmediapro.it\n📧 info@realmediapro.it\n📩 DM per info e collaborazioni",
+    links: {
+      digitalsale: "https://josephsocialmedia2-spec.github.io/Digital-Sale-Immobiliare/",
+      contenuti: "https://www.canva.com/",
+      acquisizione: "https://josephsocialmedia2-spec.github.io/acquisizione/",
+      sop01: "sop01.html",
+      prompts: "",
+      lead: "https://josephsocialmedia2-spec.github.io/lead/"
     },
-    {
-      id: "lasacra",
-      name: "La Sacra Immobiliare",
-      sector: "immobiliare",
-      fb: "https://www.facebook.com/profile.php?id=61586046932616",
-      ig: "",
-      tt: "",
-      yt: "",
-      meta: "https://business.facebook.com/",
-      canva: "https://www.canva.com/",
-      ytstudio: "https://studio.youtube.com/",
-      pdf: "https://lasacraimmobiliare.it/",
-      gpt: "https://chatgpt.com/",
-      note: "Immobiliare / tono serio"
-    }
-  ];
+    tools: [
+      { name: "Meta Business Suite", url: "https://business.facebook.com/" },
+      { name: "TikTok Studio", url: "https://www.tiktok.com/creator-center" },
+      { name: "YouTube Studio", url: "https://studio.youtube.com/" }
+    ]
+  };
 
-  function el(id){ return document.getElementById(id); }
-
-  function slugId(name){
-    return (name||"cliente")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g,"-")
-      .replace(/(^-|-$)/g,"")
-      .slice(0,40) || ("cliente-" + Math.random().toString(16).slice(2,8));
-  }
-
-  function loadClients(){
+  function loadCfg(){
     try{
-      const raw = localStorage.getItem(CLIENTS_KEY);
-      if(!raw){
-        localStorage.setItem(CLIENTS_KEY, JSON.stringify(DEFAULT_CLIENTS));
-        return DEFAULT_CLIENTS.slice();
-      }
-      const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr : [];
+      const raw = localStorage.getItem(CFG_KEY);
+      const cfg = raw ? JSON.parse(raw) : structuredClone(DEFAULT_CFG);
+
+      // ✅ migrazione soft: se esiste una vecchia config con "promozione", la ignoriamo
+      if (cfg?.links && "promozione" in cfg.links) delete cfg.links.promozione;
+
+      // ✅ assicurati che esistano sempre le chiavi nuove
+      cfg.links = cfg.links || {};
+      if(!cfg.links.contenuti) cfg.links.contenuti = DEFAULT_CFG.links.contenuti;
+
+      return cfg;
     }catch(e){
-      return [];
+      return structuredClone(DEFAULT_CFG);
     }
   }
-
-  function saveClients(arr){
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr));
+  function saveCfg(cfg){
+    localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
   }
 
-  function getActiveClientId(){
-    return localStorage.getItem(ACTIVE_CLIENT_KEY) || "";
-  }
-
-  function setActiveClientId(id){
-    localStorage.setItem(ACTIVE_CLIENT_KEY, id || "");
-  }
-
-  function findClient(arr, id){
-    return arr.find(c => c.id === id) || null;
-  }
-
-  function safeOpen(url){
-    if(!url) return;
+  function openLink(url){
+    if(!url){ alert("Link non impostato. Vai su Setup ⚙️"); return; }
     window.open(url, "_blank", "noopener");
   }
-
-  function requiredMissing(client){
-    const missing = [];
-    if(!client) return ["cliente"];
-    if(!client.fb) missing.push("Facebook");
-    if(!client.pdf) missing.push("Pagina PDF+Consenso");
-    if(!client.gpt) missing.push("ChatGPT cliente");
-    return missing;
-  }
-
-  function setBtnState(btn, enabled){
-    if(!btn) return;
-    btn.disabled = !enabled;
-  }
-
-  function renderClientUI(){
-    const clients = loadClients();
-    const sel = el("activeClientSelect");
-    const badge = el("activeClientBadge");
-    const sector = el("activeClientSector");
-    const warn = el("clientWarn");
-    const warnText = el("clientWarnText");
-    const danger = el("clientDanger");
-    const notes = el("clientNotes");
-
-    if(!sel) return;
-
-    const activeId = getActiveClientId();
-    sel.innerHTML = "";
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = "— Seleziona cliente —";
-    sel.appendChild(opt0);
-
-    clients.forEach(c => {
-      const o = document.createElement("option");
-      o.value = c.id;
-      o.textContent = c.name;
-      if(c.id === activeId) o.selected = true;
-      sel.appendChild(o);
-    });
-
-    const active = findClient(clients, activeId);
-
-    if(badge){
-      badge.innerHTML = `Cliente attivo: <strong>${active ? active.name : "NESSUNO"}</strong>`;
-    }
-    if(sector){
-      sector.value = active ? (active.sector || "generico") : "";
-    }
-
-    // notes per cliente (chiave separata)
-    if(notes){
-      if(active){
-        notes.value = localStorage.getItem(NOTES_PREFIX + active.id) || "";
-      }else{
-        notes.value = "";
-      }
-    }
-
-    // warning/danger
-    if(!active){
-      if(danger) danger.style.display = "block";
-      if(warn) warn.style.display = "none";
-    }else{
-      if(danger) danger.style.display = "none";
-      const miss = requiredMissing(active);
-      const show = miss.length > 0;
-      if(warn){
-        warn.style.display = show ? "block" : "none";
-      }
-      if(warnText && show){
-        warnText.textContent = "Mancano: " + miss.join(", ") + ". Puoi aggiungerli con “Modifica”.";
-      }
-    }
-
-    // enable/disable quick buttons
-    const btns = {
-      fb: el("q_fb"), ig: el("q_ig"), tt: el("q_tt"), yt: el("q_yt"),
-      meta: el("q_meta"), canva: el("q_canva"), ytstudio: el("q_ytstudio"),
-      pdf: el("q_pdf"), gpt: el("q_gpt")
-    };
-
-    const hasActive = !!active;
-    setBtnState(btns.fb, hasActive && !!active.fb);
-    setBtnState(btns.ig, hasActive && !!active.ig);
-    setBtnState(btns.tt, hasActive && !!active.tt);
-    setBtnState(btns.yt, hasActive && !!active.yt);
-    setBtnState(btns.meta, hasActive && !!active.meta);
-    setBtnState(btns.canva, hasActive && !!active.canva);
-    setBtnState(btns.ytstudio, hasActive && !!active.ytstudio);
-    setBtnState(btns.pdf, hasActive && !!active.pdf);
-    setBtnState(btns.gpt, hasActive && !!active.gpt);
-  }
-
-  function bindClientEvents(){
-    const sel = el("activeClientSelect");
-    const notes = el("clientNotes");
-
-    if(sel){
-      sel.addEventListener("change", () => {
-        setActiveClientId(sel.value || "");
-        renderClientUI();
-      });
-    }
-
-    if(notes){
-      notes.addEventListener("input", () => {
-        const id = getActiveClientId();
-        if(!id) return;
-        localStorage.setItem(NOTES_PREFIX + id, notes.value || "");
-      });
-    }
-
-    // quick buttons open
-    function openField(field){
-      const clients = loadClients();
-      const active = findClient(clients, getActiveClientId());
-      if(!active) return;
-      safeOpen(active[field] || "");
-    }
-
-    const map = {
-      q_fb:"fb", q_ig:"ig", q_tt:"tt", q_yt:"yt",
-      q_meta:"meta", q_canva:"canva", q_ytstudio:"ytstudio",
-      q_pdf:"pdf", q_gpt:"gpt"
-    };
-    Object.keys(map).forEach(id=>{
-      const b = el(id);
-      if(b) b.addEventListener("click", ()=>openField(map[id]));
-    });
-
-    // add/edit/delete
-    const form = el("clientForm");
-    const title = el("clientFormTitle");
-    const addBtn = el("addClientBtn");
-    const editBtn = el("editClientBtn");
-    const delBtn = el("deleteClientBtn");
-    const saveBtn = el("saveClientBtn");
-    const cancelBtn = el("cancelClientBtn");
-
-    let editId = null;
-
-    function openForm(mode){
-      if(!form) return;
-      form.classList.add("active");
-      editId = null;
-
-      // reset fields
-      ["cf_name","cf_sector","cf_fb","cf_ig","cf_tt","cf_yt","cf_meta","cf_canva","cf_ytstudio","cf_pdf","cf_gpt","cf_note"].forEach(fid=>{
-        const x = el(fid);
-        if(x) x.value = (fid==="cf_sector") ? "generico" : "";
-      });
-
-      if(mode==="edit"){
-        const clients = loadClients();
-        const active = findClient(clients, getActiveClientId());
-        if(!active) return;
-        editId = active.id;
-        if(title) title.textContent = "Modifica cliente";
-        el("cf_name").value = active.name || "";
-        el("cf_sector").value = active.sector || "generico";
-        el("cf_fb").value = active.fb || "";
-        el("cf_ig").value = active.ig || "";
-        el("cf_tt").value = active.tt || "";
-        el("cf_yt").value = active.yt || "";
-        el("cf_meta").value = active.meta || "";
-        el("cf_canva").value = active.canva || "";
-        el("cf_ytstudio").value = active.ytstudio || "";
-        el("cf_pdf").value = active.pdf || "";
-        el("cf_gpt").value = active.gpt || "";
-        el("cf_note").value = active.note || "";
-      }else{
-        if(title) title.textContent = "Nuovo cliente";
-      }
-    }
-
-    function closeForm(){
-      if(!form) return;
-      form.classList.remove("active");
-      editId = null;
-    }
-
-    if(addBtn) addBtn.addEventListener("click", ()=>openForm("add"));
-    if(editBtn) editBtn.addEventListener("click", ()=>openForm("edit"));
-    if(cancelBtn) cancelBtn.addEventListener("click", closeForm);
-
-    if(delBtn){
-      delBtn.addEventListener("click", ()=>{
-        const clients = loadClients();
-        const activeId = getActiveClientId();
-        const active = findClient(clients, activeId);
-        if(!active){ alert("Seleziona un cliente da eliminare."); return; }
-        if(confirm(`Eliminare "${active.name}"?`)){
-          const next = clients.filter(c=>c.id!==activeId);
-          saveClients(next);
-          setActiveClientId("");
-          renderClientUI();
-        }
-      });
-    }
-
-    if(saveBtn){
-      saveBtn.addEventListener("click", ()=>{
-        const name = (el("cf_name").value||"").trim();
-        if(!name){ alert("Inserisci il nome cliente."); return; }
-        const obj = {
-          id: editId || slugId(name),
-          name,
-          sector: el("cf_sector").value || "generico",
-          fb: el("cf_fb").value.trim(),
-          ig: el("cf_ig").value.trim(),
-          tt: el("cf_tt").value.trim(),
-          yt: el("cf_yt").value.trim(),
-          meta: el("cf_meta").value.trim(),
-          canva: el("cf_canva").value.trim(),
-          ytstudio: el("cf_ytstudio").value.trim(),
-          pdf: el("cf_pdf").value.trim(),
-          gpt: el("cf_gpt").value.trim(),
-          note: el("cf_note").value.trim()
-        };
-
-        const clients = loadClients();
-        const idx = clients.findIndex(c=>c.id===obj.id);
-        if(idx>=0) clients[idx] = obj;
-        else clients.unshift(obj);
-
-        saveClients(clients);
-        setActiveClientId(obj.id);
-        closeForm();
-        renderClientUI();
-        alert("Cliente salvato.");
-      });
-    }
-
-    // export/import clienti
-    const exportBtn = el("exportClientsBtn");
-    const importFile = el("importClientsFile");
-    if(exportBtn){
-      exportBtn.addEventListener("click", ()=>{
-        const clients = loadClients();
-        const blob = new Blob([JSON.stringify(clients, null, 2)], {type:"application/json;charset=utf-8"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "clienti_sop01.json";
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-    }
-    if(importFile){
-      importFile.addEventListener("change", async ()=>{
-        const f = importFile.files && importFile.files[0];
-        if(!f) return;
-        try{
-          const txt = await f.text();
-          const arr = JSON.parse(txt);
-          if(!Array.isArray(arr)) throw new Error("Formato non valido");
-          // normalizza minimi campi
-          const norm = arr.map(c=>({
-            id: (c.id || slugId(c.name||"cliente")),
-            name: (c.name||"Cliente"),
-            sector: (c.sector||"generico"),
-            fb: (c.fb||""),
-            ig: (c.ig||""),
-            tt: (c.tt||""),
-            yt: (c.yt||""),
-            meta: (c.meta||"https://business.facebook.com/"),
-            canva: (c.canva||"https://www.canva.com/"),
-            ytstudio: (c.ytstudio||"https://studio.youtube.com/"),
-            pdf: (c.pdf||""),
-            gpt: (c.gpt||"https://chatgpt.com/"),
-            note: (c.note||"")
-          }));
-          saveClients(norm);
-          setActiveClientId("");
-          renderClientUI();
-          alert("Clienti importati.");
-        }catch(e){
-          alert("Errore import: file non valido.");
-        }finally{
-          importFile.value = "";
-        }
-      });
-    }
-
-    // PROMPT -> DOWNLOAD .txt (nessun output a schermo)
-    function makePrompt(mode){
-      const clients = loadClients();
-      const client = findClient(clients, getActiveClientId());
-      if(!client){
-        alert("Seleziona prima un cliente.");
-        return;
-      }
-      const notes = (el("clientNotes")?.value || "").trim();
-
-      const sector = (client.sector || "generico");
-      const nome = (client.name || "Cliente");
-      const linkPdf = (client.pdf || "INSERISCI_LINK_PDF_CON_MODULO_CONSENSO");
-
-      const tone =
-        (mode==="immobiliare" || sector==="immobiliare") ? "IMMOBILIARE (professionale, chiaro, orientato alla vendita)" :
-        (mode==="ristorante" || sector==="ristorante") ? "RISTORANTE (caldo, appetitoso, invito all’azione)" :
-        "NEUTRO (pulito, informativo)";
-
-      const prompt = `Sei un social media manager.
-Cliente: ${nome}
-Tono: ${tone}
-
-OBIETTIVO:
-- creare 3 contenuti (post) + 1 caption Reel + 1 storia
-- ogni contenuto deve portare a: link PDF/landing con consenso oppure contatto diretto
-- stile semplice e umano, niente promesse esagerate
-
-DATI CLIENTE:
-- Telefono contatto: ${CONTACT_PHONE}
-- Link PDF/landing (con modulo consenso): ${linkPdf}
-
-APPUNTI GREZZI (da riformulare):
-${notes || "(nessun appunto incollato)"}
-
-REGOLE:
-- Scrivi testi brevi e chiari
-- Inserisci CTA finale: “Scrivimi in DM” oppure “Chiama/WhatsApp”
-- Non usare parole vietate o troppo aggressive
-- Se mancano dettagli dell’immobile/piatto, chiedi 3 domande rapide alla fine
-
-OUTPUT:
-1) Post 1 (testo + CTA)
-2) Post 2 (testo + CTA)
-3) Post 3 (testo + CTA)
-4) Caption Reel (breve)
-5) Testo Storia (1–2 righe)
-6) 5 hashtag coerenti e locali`;
-
-      // RICHIESTA UTENTE: niente output a schermo
-      const out = el("promptOut");
-      if(out) out.style.display = "none";
-      const pt = el("promptText");
-      if(pt) pt.style.display = "none";
-
-      // Download file .txt
-      const safeName = (nome || "cliente")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g,"-")
-        .replace(/(^-|-$)/g,"")
-        .slice(0,40) || "cliente";
-
-      const date = new Date();
-      const stamp = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
-
-      const filename = `prompt_${safeName}_${mode || sector}_${stamp}.txt`;
-      const blob = new Blob([prompt], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    const bImm = el("mkPromptImm");
-    const bRis = el("mkPromptRisto");
-    const bNeu = el("mkPromptNeutro");
-    if(bImm) bImm.addEventListener("click", ()=>makePrompt("immobiliare"));
-    if(bRis) bRis.addEventListener("click", ()=>makePrompt("ristorante"));
-    if(bNeu) bNeu.addEventListener("click", ()=>makePrompt("neutro"));
-
-    // bottone copia prompt: disabilitato (richiesta: prompt solo download)
-    const copyBtn = el("copyPromptBtn");
-    if(copyBtn){
-      copyBtn.addEventListener("click", ()=>{
-        alert("Il prompt viene scaricato come file .txt. Premi uno dei pulsanti 'Crea prompt'.");
-      });
-    }
-  }
-
-  window.addEventListener("DOMContentLoaded", ()=>{
-    renderClientUI();
-    bindClientEvents();
-  });
-})();
-</script>
-
-<!-- =========================================================
-     JS SOP 01 (codice originale)
-     ========================================================= -->
-<script>
-const STORAGE_KEY="sop_dashboard_v1";
-const LEADS_KEY="sop_leads_v1";
-
-function todayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function loadState(){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");return all[todayKey()]||{};}
-function saveState(state){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");all[todayKey()]=state;localStorage.setItem(STORAGE_KEY,JSON.stringify(all));}
-function resetToday(){const all=JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");delete all[todayKey()];localStorage.setItem(STORAGE_KEY,JSON.stringify(all));}
-
-function loadLeads(){return JSON.parse(localStorage.getItem(LEADS_KEY)||"[]");}
-function saveLeads(leads){localStorage.setItem(LEADS_KEY,JSON.stringify(leads));}
-
-const todayLabel=document.getElementById("todayLabel");
-const dayState=document.getElementById("dayState");
-const dayDot=document.getElementById("dayDot");
-
-const fields={
-  kpi_posts:document.getElementById("kpi_posts"),
-  kpi_pdf_requests:document.getElementById("kpi_pdf_requests"),
-  morning_source:document.getElementById("morning_source"),
-  morning_script:document.getElementById("morning_script"),
-  kpi_morning_contacts:document.getElementById("kpi_morning_contacts"),
-  kpi_followups:document.getElementById("kpi_followups"),
-  kpi_appointments:document.getElementById("kpi_appointments"),
-  afternoon_notes:document.getElementById("afternoon_notes"),
-  tomorrow_source:document.getElementById("tomorrow_source"),
-  tomorrow_script:document.getElementById("tomorrow_script"),
-  tomorrow_list:document.getElementById("tomorrow_list"),
-  pdf_title:document.getElementById("pdf_title"),
-  pdf_link:document.getElementById("pdf_link"),
-};
-
-const CL={
-  social:[
-    {id:"social_0",label:"Controllo gruppi (Facebook/zone)",desc:"Apri i gruppi locali e verifica regole/post rilevanti."},
-    {id:"social_1",label:"Pubblica 2–3 contenuti (inizio giornata)",desc:"News / problema / opportunità / immobile. Utili, non commerciali."},
-    {id:"social_2",label:"Inserisci link PDF nei post dove serve",desc:"Post utile → link PDF (Cap. 0A)."},
-    {id:"social_3",label:"Rispondi a commenti informativi",desc:"Ringrazia, chiarisci, nessuna vendita nei commenti."},
-    {id:"social_4",label:"Gestisci richieste PDF arrivate",desc:"Salva lead + invia PDF in modo pulito (no proposta commerciale)."},
-  ],
-  morning:[
-    {id:"morning_0",label:"Allineamento (fonte+script+obiettivo)",desc:"Una sola fonte e uno script per sessione."},
-    {id:"morning_1",label:"Sessione 1 completata (50/10)",desc:"Focus pieno. Zero distrazioni."},
-    {id:"morning_2",label:"Registrazione dati (intermedia)",desc:"Esiti + info chiave + next action."},
-    {id:"morning_3",label:"Sessione 2 completata (50/10)",desc:"Stessa disciplina. Una fonte."},
-    {id:"morning_4",label:"Chiusura mattino: CRM pulito",desc:"Tutto registrato. Nessun contatto ‘in testa’."},
-  ],
-  afternoon:[
-    {id:"afternoon_0",label:"Riattivazione: priorità follow-up",desc:"Ordina per urgenza e valore."},
-    {id:"afternoon_1",label:"Follow-up strutturati completati",desc:"Richiamate promesse + contatti caldi + lead PDF."},
-    {id:"afternoon_2",label:"Appuntamenti / trattative",desc:"Valutazioni, visite, call. Aggiorna pipeline."},
-    {id:"afternoon_3",label:"Amministrazione e sistema",desc:"Documenti, CRM, pulizia."},
-  ],
-  planning:[
-    {id:"planning_0",label:"Seleziona fonte domani (UNA)",desc:"Niente indecisione domani mattina."},
-    {id:"planning_1",label:"Seleziona script domani",desc:"Script approvato. Nessuna improvvisazione."},
-    {id:"planning_2",label:"Prepara lista contatti",desc:"Lista pronta (numeri, nominativi, criteri)."},
-    {id:"planning_3",label:"Task/Note impostate",desc:"Domani parte senza attrito."},
-  ]
-};
-
-
-/* IMPLEMENTA: link cliccabile nella sezione "Pubblica 2–3 contenuti (inizio giornata)" */
-(function(){
-  try{
-    const t = (CL && CL.social) ? CL.social.find(x=>x.id==="social_1") : null;
-    if(t){
-      t.desc = t.desc + ` <a href="https://chatgpt.com/c/696505a9-14f0-8328-b3ab-09a7181d5a81" target="_blank" rel="noopener">Apri link</a>`;
-    }
-  }catch(e){}
-})();
-
-function renderChecklist(containerId, items, state){
-  const c=document.getElementById(containerId); c.innerHTML="";
-  items.forEach(it=>{
-    const el=document.createElement("div");
-    el.className="task"+(state[it.id]?" done":"");
-    el.innerHTML=`<input type="checkbox" ${state[it.id]?"checked":""}><div class="tmain"><div class="tlabel">${it.label}</div><div class="tdesc">${it.desc}</div></div>`;
-    const cb=el.querySelector("input");
-    cb.addEventListener("change",()=>{
-      const s=loadState(); s[it.id]=cb.checked; saveState(s); applyStateToUI();
-    });
-    c.appendChild(el);
-  });
-}
-
-function bindField(key){
-  const el=fields[key];
-  el.addEventListener("input",()=>{
-    const s=loadState(); s[key]=el.value; saveState(s); applyStateToUI();
-  });
-}
-
-function applyStateToUI(){
-  const s=loadState();
-  Object.keys(fields).forEach(k=>{fields[k].value = (s[k] ?? "");});
-
-  renderChecklist("cl_social",CL.social,s);
-  renderChecklist("cl_morning",CL.morning,s);
-  renderChecklist("cl_afternoon",CL.afternoon,s);
-  renderChecklist("cl_planning",CL.planning,s);
-
-  const must=[
-    "social_0","social_1","social_2","social_3","social_4",
-    "morning_0","morning_1","morning_2","morning_3","morning_4",
-    "afternoon_0","afternoon_1","afternoon_2",
-    "planning_0","planning_1","planning_2"
-  ];
-  const done=must.filter(k=>s[k]).length, total=must.length;
-
-  let stateText="NON COMPLETATO", dot="var(--bad)";
-  if(done===total){stateText="COMPLETATO"; dot="var(--good)";}
-  else if(done>=Math.floor(total*0.6)){stateText="IN CORSO"; dot="var(--warn)";}
-  dayState.textContent=stateText; dayDot.style.background=dot;
-
-  renderLeads();
-}
-
-function setDateHeader(){
-  const d=new Date();
-  todayLabel.textContent=d.toLocaleDateString("it-IT",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-}
-
-/* Leads */
-const saveLeadBtn=document.getElementById("saveLeadBtn");
-const genCaptionBtn=document.getElementById("genCaptionBtn");
-const leadPhone=document.getElementById("lead_phone");
-const leadConsent=document.getElementById("lead_consent");
-const captionBox=document.getElementById("captionBox");
-
-saveLeadBtn.addEventListener("click",()=>{
-  const phone=leadPhone.value.trim();
-  const consent = leadConsent.value==="si";
-  if(!phone){alert("Inserisci il telefono.");return;}
-  if(!consent){alert("Consenso obbligatorio per salvare il contatto.");return;}
-  const leads=loadLeads();
-  if(!leads.some(l=>l.phone===phone)){
-    leads.unshift({phone,consent:true,date:new Date().toISOString()});
-    saveLeads(leads);
-  }
-  leadPhone.value="";
-  renderLeads();
-  alert("Lead salvato in locale.");
-});
-
-genCaptionBtn.addEventListener("click",()=>{
-  const title=(fields.pdf_title.value||"PDF gratuito").trim();
-  const link=(fields.pdf_link.value||"INSERISCI_LINK_PDF").trim();
-  const cap=`📘 PDF GRATUITO — ${title}
-
-Documento pratico, semplice e utile.
-
-👉 Scaricalo qui:
-${link}
-
-✅ Nessuna vendita forzata.
-
-Per ricevere materiale informativo e promozionale è richiesto consenso (GDPR).`;
-  captionBox.style.display="flex";
-  captionBox.innerHTML=`<div class="tmain"><div class="tlabel">Caption pronta</div><div class="tdesc"><pre style="margin:8px 0 0;white-space:pre-wrap">${cap}</pre></div></div>`;
-});
-
-function renderLeads(){
-  const tbody=document.querySelector("#leadsTable tbody");
-  tbody.innerHTML="";
-  loadLeads().slice(0,25).forEach(l=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${escapeHtml(l.phone)}</td><td>${l.consent?"SÌ":"NO"}</td><td>${new Date(l.date).toLocaleString("it-IT")}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-function escapeHtml(s){return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
-
-/* Export */
-document.getElementById("exportBtn").addEventListener("click",()=>{
-  const leads=loadLeads();
-  const rows=[["phone","consent","date"],...leads.map(l=>[l.phone,l.consent?"yes":"no",l.date])];
-  const csv=rows.map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");
-  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a"); a.href=url; a.download=`leads_${todayKey()}.csv`; a.click();
-  URL.revokeObjectURL(url);
-});
-
-/* Reset day */
-document.getElementById("resetDayBtn").addEventListener("click",()=>{
-  if(confirm("Vuoi azzerare solo la giornata di oggi (checklist+campi)? I contatti restano.")){resetToday();applyStateToUI();}
-});
-
-/* Timer 50/10 */
-const clock=document.getElementById("clock");
-const timerMode=document.getElementById("timerMode");
-let timer=null, remaining=50*60, mode="focus";
-function setClock(sec){const m=Math.floor(sec/60), s=sec%60; clock.textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");}
-function stop(){if(timer){clearInterval(timer);timer=null;} timerMode.textContent=(mode==="focus")?"Pronto (Focus 50')":"Pronto (Pausa 10')";}
-function start(sec,newMode){
-  stop(); remaining=sec; mode=newMode;
-  timerMode.textContent=(mode==="focus")?"In corso (Focus 50')":"In corso (Pausa 10')";
-  setClock(remaining);
-  timer=setInterval(()=>{remaining--; setClock(remaining); if(remaining<=0){stop(); alert(mode==="focus"?"Fine Focus! Fai 10 minuti di pausa.":"Fine Pausa! Torna al Focus.");}},1000);
-}
-document.getElementById("startFocusBtn").addEventListener("click",()=>start(50*60,"focus"));
-document.getElementById("startBreakBtn").addEventListener("click",()=>start(10*60,"break"));
-document.getElementById("stopBtn").addEventListener("click",()=>stop());
-setClock(50*60);
-
-/* SOP text */
-document.getElementById("sopText").innerHTML = `<pre>
-SOP 01 — SISTEMA OPERATIVO DI ACQUISIZIONE IMMOBILIARE (Versione 1.4)
-
-CAPITOLO 0 — PRESIDIO DIGITALE E POSIZIONAMENTO NON INVASIVO
-0.1 OBIETTIVO: presenza, network, contenuti utili, credibilità.
-0.2 PRINCIPI: farsi vedere prima, dare valore, no vendita diretta.
-0.3 GRUPPI: iscrizione e condivisione nel rispetto regole.
-0.4 NETWORK: richieste graduali, no messaggi commerciali immediati.
-0.5 CONTENUTI: 4–8/giorno (news, immobile, problemi, opportunità, contesto).
-0.6 STILE: semplice, umano; vietati slogan/promesse.
-0.7 INTERAZIONE: rispondere e chiarire; vietata vendita.
-0.8 REGOLA: Prima ti vedono. Poi ti ascoltano. Solo dopo si fidano.
-
-CAPITOLO 0A — PDF UTILI + DATABASE PROPRIETARIO
-0A.1 OBIETTIVO: trasformare contenuti in contatti, creare database.
-0A.2 PRINCIPI: valore prima del numero; consenso obbligatorio.
-0A.3 STRUMENTO: PDF utili; vietati PDF promozionali diretti.
-0A.4 FLUSSO: post→link→numero+consenso→memorizza.
-0A.5 INVIO: WhatsApp; nessuna proposta commerciale nel primo invio.
-0A.6 FUTURO: invii successivi senza richiedere numero; caption standard.
-0A.7 CONSENSO: dicitura GDPR obbligatoria.
-0A.8 REGOLA: senza valore niente numero; senza numero niente contatto; senza database niente continuità.
-
-CAPITOLO 1 — OBIETTIVO SOP: opportunità quotidiane; standard; misurazione; centralizzazione.
-CAPITOLO 2 — PRINCIPI: parlare con persone; routine; tecnologia supporta.
-2.1 Mattino: acquisizione; script obbligatori; nessuna improvvisazione.
-2.2 Pomeriggio: follow-up/gestione/appuntamenti; vietato freddo.
-CAPITOLO 3 — STRUTTURA: pianificazione serale; fasce orarie.
-CAPITOLO 4 — MATTINO: 2 sessioni 50/10; una fonte; registrazione.
-CAPITOLO 6 — DATABASE: next action obbligatoria; non registrato = inesistente.
-CAPITOLO 7 — POMERIGGIO: follow-up; appuntamenti; admin; pianificazione.
-CAPITOLO 8 — KPI: contatti, follow-up, appuntamenti, db aggiornato.
-CAPITOLO 9 — NON CONFORMITÀ: saltare mattino, non registrare, non pianificare.
-CAPITOLO 10 — RESPONSABILITÀ: esecuzione e verifica.
-CAPITOLO 11 — REGOLA FINALE: Se non fai la domanda, non stai acquisendo.
-</pre>`;
-
-setDateHeader();
-Object.keys(fields).forEach(bindField);
-applyStateToUI();
-</script>
-
-
-<!-- IMPLEMENTA: colori celle confermate planner settimanale -->
-<style>
-  .weekly td.confirmed {
-    background: rgba(120,120,120,.18);
-  }
-  .weekly td.confirmed .channels {
-    opacity: .9;
-  }
-</style>
-
-<!-- IMPLEMENTA: stato confermato celle planner settimanale -->
-<script>
-(function(){
-  function updateConfirmed(){
-    document.querySelectorAll('#weeklyTbody td').forEach(td=>{
-      const anyChecked = td.querySelector('input[type="checkbox"]:checked');
-      if(anyChecked) td.classList.add('confirmed');
-      else td.classList.remove('confirmed');
-    });
-  }
-  document.addEventListener('change', function(e){
-    if(e.target && e.target.matches('#weeklyTbody input[type="checkbox"]')){
-      updateConfirmed();
-    }
-  });
-  window.addEventListener('DOMContentLoaded', updateConfirmed);
-})();
-</script>
-
-
-<!-- IMPLEMENTA: override colore arancione per slot confermati -->
-<style>
-  .weekly td.confirmed{
-    background: rgba(245,158,11,.22) !important;
-    border-color: rgba(245,158,11,.45) !important;
-  }
-  .weekly td.confirmed .ch{
-    border-color: rgba(245,158,11,.55) !important;
-  }
-</style>
-
-
-<!-- IMPLEMENTA: colore arancione visibile per slot confermati (planner settimanale) -->
-<style>
-  #weeklyTable td.confirmed{
-    background: rgba(245,158,11,.35) !important;
-    box-shadow: inset 0 0 0 1px rgba(245,158,11,.55) !important;
-  }
-  #weeklyTable td.confirmed .cell{
-    background: transparent !important;
-  }
-  #weeklyTable td.confirmed .cellNote{
-    border-color: rgba(245,158,11,.55) !important;
-  }
-</style>
-
-
-<!-- IMPLEMENTA: confermato + esporta PNG planner settimanale (senza toccare codice esistente) -->
-<script>
-(function(){
-  function updateConfirmed(){
-    var tbody = document.getElementById('weeklyTbody');
-    if(!tbody) return;
-    tbody.querySelectorAll('td').forEach(function(td){
-      if(td.classList.contains('slotHead')) return;
-      var anyChecked = td.querySelector('input[type="checkbox"]:checked');
-      if(anyChecked) td.classList.add('confirmed');
-      else td.classList.remove('confirmed');
-    });
-  }
-
-  function ensureExportBtn(){
-    var controls = document.querySelector('#weeklyPlannerCard .weeklyControls');
-    if(!controls) return;
-
-    if(document.getElementById('exportWeekPngBtn')) return;
-
-    var btn = document.createElement('button');
-    btn.className = 'miniBtn';
-    btn.id = 'exportWeekPngBtn';
-    btn.textContent = 'Esporta immagine PNG';
-    controls.appendChild(btn);
-
-    btn.addEventListener('click', function(){
-      try{
-        var wrap = document.querySelector('#weeklyPlannerCard .weeklyTableWrap');
-        var table = document.getElementById('weeklyTable');
-        if(!wrap || !table) return;
-
-        // Clone + normalize inputs so the export reflects what you see
-        var cloneWrap = wrap.cloneNode(true);
-
-        // In clone: convert checkboxes to visible marks and textareas to plain divs
-        cloneWrap.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
-          var mark = document.createElement('span');
-          mark.textContent = cb.checked ? '✓' : '';
-          mark.style.display = 'inline-flex';
-          mark.style.alignItems = 'center';
-          mark.style.justifyContent = 'center';
-          mark.style.width = '16px';
-          mark.style.height = '16px';
-          mark.style.border = '1px solid rgba(255,255,255,.35)';
-          mark.style.borderRadius = '4px';
-          mark.style.marginRight = '6px';
-          cb.replaceWith(mark);
-        });
-
-        cloneWrap.querySelectorAll('textarea').forEach(function(tx){
-          var div = document.createElement('div');
-          div.textContent = tx.value || '';
-          div.style.whiteSpace = 'pre-wrap';
-          div.style.border = '1px solid rgba(255,255,255,.18)';
-          div.style.borderRadius = '10px';
-          div.style.padding = '8px 10px';
-          div.style.minHeight = '38px';
-          div.style.fontSize = '12px';
-          div.style.color = 'rgba(233,240,247,.95)';
-          div.style.background = 'rgba(0,0,0,.22)';
-          tx.replaceWith(div);
-        });
-
-        // Compute export size from live table
-        var w = Math.max(table.scrollWidth, wrap.clientWidth);
-        var h = Math.max(table.scrollHeight, wrap.clientHeight);
-
-        // Wrap in a container with the same dark background
-        var outer = document.createElement('div');
-        outer.style.width = w + 'px';
-        outer.style.height = h + 'px';
-        outer.style.background = 'linear-gradient(180deg,#070a0f,#0b0f14)';
-        outer.style.padding = '14px';
-        outer.style.boxSizing = 'border-box';
-        outer.appendChild(cloneWrap);
-
-        // Serialize as SVG foreignObject
-        var serializer = new XMLSerializer();
-        var xhtml = serializer.serializeToString(outer);
-
-        var svg =
-          '<svg xmlns="http://www.w3.org/2000/svg" width="'+(w+28)+'" height="'+(h+28)+'">' +
-            '<foreignObject x="0" y="0" width="100%" height="100%">' +
-              '<div xmlns="http://www.w3.org/1999/xhtml">' + xhtml + '</div>' +
-            '</foreignObject>' +
-          '</svg>';
-
-        var blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
-        var url = URL.createObjectURL(blob);
-
-        var img = new Image();
-        img.onload = function(){
-          try{
-            var canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            var pngUrl = canvas.toDataURL('image/png');
-            var a = document.createElement('a');
-            a.href = pngUrl;
-            a.download = 'planner_settimanale.png';
-            a.click();
-          } finally {
-            URL.revokeObjectURL(url);
-          }
-        };
-        img.onerror = function(){
-          URL.revokeObjectURL(url);
-          alert('Export PNG non riuscito su questo browser. Prova Chrome oppure usa stampa in PDF.');
-        };
-        img.src = url;
-      }catch(e){
-        alert('Errore export PNG.');
-      }
-    });
-  }
-
-  // Event delegation for planner checkboxes
-  document.addEventListener('change', function(e){
-    if(e.target && e.target.matches('#weeklyTbody input[type="checkbox"]')){
-      updateConfirmed();
-    }
-  });
-
-  // Watch planner render updates
-  function installObserver(){
-    var tbody = document.getElementById('weeklyTbody');
-    if(!tbody) return;
-    var mo = new MutationObserver(function(){
-      updateConfirmed();
-      ensureExportBtn();
-    });
-    mo.observe(tbody, {childList:true, subtree:true});
-  }
-
-  window.addEventListener('DOMContentLoaded', function(){
-    ensureExportBtn();
-    installObserver();
-    // Defer once to allow initial renderPlanner to run
-    setTimeout(function(){
-      updateConfirmed();
-      ensureExportBtn();
-    }, 50);
-  });
-})();
-</script>
-
-
-<!-- IMPLEMENTA: Google Drive Sync (Apps Script Web App) -->
-<style>
-  .driveSyncCard{margin-top:12px;border:1px solid var(--line);background:rgba(15,34,51,.35);border-radius:14px;padding:12px}
-  .driveSyncRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
-  .driveSyncStatus{font-size:12px;color:var(--muted)}
-  .driveSyncStatus b{color:var(--text)}
-  .driveSyncInput{max-width:520px}
-</style>
-
-
-<!-- IMPLEMENTA: Google Drive Sync (Apps Script Web App) -->
-<script>
-(function(){
-  const DRIVE_ENDPOINT_KEY = "sop_drive_webapp_url_v1";
-  const DRIVE_LASTSYNC_KEY = "sop_drive_last_sync_v1";
-
-  const KEYS_EXACT = [
-    "sop_dashboard_v1",
-    "sop_leads_v1",
-    "sop_clients_v1",
-    "sop_active_client_v1",
-    "weekly_social_planner_v1"
-  ];
-  const KEY_PREFIXES = [
-    "sop_client_notes_"
-  ];
-
-  function nowIso(){ return new Date().toISOString(); }
-
-  function getEndpoint(){
-    return (localStorage.getItem(DRIVE_ENDPOINT_KEY)||"").trim();
-  }
-  function setEndpoint(url){
-    localStorage.setItem(DRIVE_ENDPOINT_KEY, (url||"").trim());
-  }
-
-  function collectData(){
-    const payload = {};
-    // exact keys
-    KEYS_EXACT.forEach(k=>{
-      const v = localStorage.getItem(k);
-      if(v !== null) payload[k] = v;
-    });
-    // prefixed keys
-    for(let i=0;i<localStorage.length;i++){
-      const k = localStorage.key(i);
-      if(!k) continue;
-      for(const p of KEY_PREFIXES){
-        if(k.startsWith(p)){
-          const v = localStorage.getItem(k);
-          if(v !== null) payload[k] = v;
-          break;
-        }
-      }
-    }
-    return payload;
-  }
-
-  function applyData(map){
-    if(!map || typeof map !== "object") return;
-    Object.keys(map).forEach(k=>{
-      try{
-        if(typeof map[k] === "string"){
-          localStorage.setItem(k, map[k]);
-        }
-      }catch(e){}
-    });
-  }
-
-  async function postJson(url, body){
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    const txt = await res.text();
-    let j = null;
-    try{ j = JSON.parse(txt); }catch(e){ j = { ok:false, raw:txt }; }
-    return j;
-  }
-
-  async function loadFromDrive(){
-    const url = getEndpoint();
-    if(!url) return {ok:false, msg:"URL Web App non impostato"};
-    const j = await postJson(url, { action:"load" });
-    if(j && j.ok && j.data){
-      applyData(j.data);
-      localStorage.setItem(DRIVE_LASTSYNC_KEY, nowIso());
-      return {ok:true};
-    }
-    return {ok:false, msg:(j && (j.msg||j.error||j.raw)) || "Errore load"};
-  }
-
-  async function saveToDrive(){
-    const url = getEndpoint();
-    if(!url) return {ok:false, msg:"URL Web App non impostato"};
-    const data = collectData();
-    const j = await postJson(url, { action:"save", data });
-    if(j && j.ok){
-      localStorage.setItem(DRIVE_LASTSYNC_KEY, nowIso());
-      return {ok:true};
-    }
-    return {ok:false, msg:(j && (j.msg||j.error||j.raw)) || "Errore save"};
-  }
-
-  function renderUI(){
-    const weeklyCard = document.getElementById("weeklyPlannerCard");
-    if(!weeklyCard) return;
-
-    if(document.getElementById("driveSyncCard")) return;
-
-    const card = document.createElement("div");
-    card.className = "driveSyncCard";
-    card.id = "driveSyncCard";
-    card.innerHTML = `
-      <div class="sectiontitle">
-        <h2 style="margin:0;font-size:13px">Sync Google Drive (multi-PC)</h2>
-        <span class="badge">Apps Script Web App</span>
-      </div>
-      <div class="hintLine" style="margin-top:6px">
-        Imposta l’URL della Web App. Poi usa “Carica da Drive” all’avvio e “Salva su Drive” quando hai finito (o quando vuoi).
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="field">
-          <label>URL Web App (Apps Script)</label>
-          <input class="driveSyncInput" type="text" id="driveWebAppUrl" placeholder="https://script.google.com/macros/s/XXXX/exec">
+  function scrollToTop(){ window.scrollTo({top:0, behavior:"smooth"}); }
+
+  function renderCards(){
+    const cfg = loadCfg();
+    document.getElementById("contactPill").textContent = cfg.contactsText || DEFAULT_CFG.contactsText;
+
+    const cardsEl = document.getElementById("cards");
+    cardsEl.innerHTML = "";
+
+    // ✅ Ordine richiesto + "SOP 01 cambia Promozione" (Promozione rimossa)
+    const fixed = [
+      { key:"digitalsale", icon:"fa-handshake", title:"Digital Sale", desc:"Vendita immobiliare" },
+      { key:"contenuti",  icon:"fa-palette",   title:"Contenuti",   desc:"Canva, visual, copy e creatività" },
+      { key:"acquisizione",icon:"fa-building", title:"Acquisizione", desc:"Gestione acquisizione" },
+      { key:"sop01",       icon:"fa-clipboard-check", title:"SOP 01", desc:"Sistema operativo: checklist, KPI, workflow" },
+      { key:"prompts",     icon:"fa-wand-magic-sparkles", title:"Prompt", desc:"Prompt ChatGPT per velocizzare lavoro" },
+    ];
+
+    fixed.forEach(c => {
+      const url = (cfg.links && cfg.links[c.key]) ? cfg.links[c.key] : "";
+      const div = document.createElement("div");
+      div.className = "card";
+      div.onclick = () => openLink(url);
+      div.innerHTML = `
+        <i class="fa-solid ${c.icon}"></i>
+        <div>
+          <h3>${c.title}</h3>
+          <p>${c.desc}</p>
+          <small>${url ? url : "⚠️ Link non impostato (Setup)"}</small>
         </div>
-      </div>
-
-      <div class="driveSyncRow">
-        <button class="miniBtn" id="driveSaveBtn">Salva su Drive</button>
-        <button class="miniBtn" id="driveLoadBtn">Carica da Drive</button>
-        <button class="miniBtn" id="driveTestBtn">Test connessione</button>
-        <div class="driveSyncStatus" id="driveSyncStatus">Stato: <b>non configurato</b></div>
-      </div>
-    `;
-
-    // Insert right after weekly planner card (below it) for visibility
-    weeklyCard.parentNode.insertBefore(card, weeklyCard.nextSibling);
-
-    const input = document.getElementById("driveWebAppUrl");
-    const status = document.getElementById("driveSyncStatus");
-    const saveBtn = document.getElementById("driveSaveBtn");
-    const loadBtn = document.getElementById("driveLoadBtn");
-    const testBtn = document.getElementById("driveTestBtn");
-
-    const last = (localStorage.getItem(DRIVE_LASTSYNC_KEY)||"").trim();
-
-    input.value = getEndpoint();
-
-    function setStatus(txt){
-      if(status) status.innerHTML = `Stato: <b>${txt}</b>` + (last ? ` · ultimo sync: ${(new Date(last)).toLocaleString("it-IT")}` : "");
-    }
-
-    if(getEndpoint()) setStatus("configurato");
-    else setStatus("non configurato");
-
-    input.addEventListener("input", ()=>{
-      setEndpoint(input.value);
-      setStatus(getEndpoint() ? "configurato" : "non configurato");
+      `;
+      cardsEl.appendChild(div);
     });
 
-    function lockButtons(lock){
-      if(saveBtn) saveBtn.disabled = !!lock;
-      if(loadBtn) loadBtn.disabled = !!lock;
-      if(testBtn) testBtn.disabled = !!lock;
-    }
+    // Tools extra
+    (cfg.tools || []).forEach(t => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.onclick = () => openLink(t.url);
+      div.innerHTML = `
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+        <div>
+          <h3>${escapeHtml(t.name || "Tool")}</h3>
+          <p>Strumento rapido</p>
+          <small>${t.url ? escapeHtml(t.url) : "⚠️ Link non impostato (Setup)"}</small>
+        </div>
+      `;
+      cardsEl.appendChild(div);
+    });
+  }
 
-    if(saveBtn){
-      saveBtn.addEventListener("click", async ()=>{
-        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
-        lockButtons(true);
-        setStatus("salvataggio…");
+  // Setup modal
+  const backdrop = document.getElementById("setupBackdrop");
+  function openSetup(){ fillSetup(); backdrop.style.display = "flex"; }
+  function closeSetup(){ backdrop.style.display = "none"; }
+
+  function fillSetup(){
+    const cfg = loadCfg();
+    document.getElementById("contactsText").value = cfg.contactsText || "";
+    document.getElementById("contactsBlock").value = cfg.contactsBlock || "";
+
+    document.getElementById("link_digitalsale").value = cfg.links.digitalsale || "";
+    document.getElementById("link_contenuti").value  = cfg.links.contenuti || "";
+    document.getElementById("link_acquisizione").value = cfg.links.acquisizione || "";
+    document.getElementById("link_sop01").value = cfg.links.sop01 || "";
+    document.getElementById("link_prompts").value = cfg.links.prompts || "";
+    document.getElementById("link_lead").value = cfg.links.lead || "";
+
+    renderToolsEditor(cfg.tools || []);
+  }
+
+  function renderToolsEditor(tools){
+    const list = document.getElementById("toolsList");
+    list.innerHTML = "";
+    tools.forEach((t, idx) => {
+      const line = document.createElement("div");
+      line.className = "toolLine";
+      line.innerHTML = `
+        <input type="text" value="${escapeAttr(t.name || "")}" placeholder="Nome tool (es. Meta Business Suite)" data-tool-name="${idx}">
+        <input type="text" value="${escapeAttr(t.url || "")}" placeholder="Link tool" data-tool-url="${idx}">
+        <button title="Rimuovi" onclick="removeTool(${idx})"><i class="fa-solid fa-trash"></i></button>
+      `;
+      list.appendChild(line);
+    });
+  }
+
+  function collectToolsFromEditor(){
+    const names = [...document.querySelectorAll("input[data-tool-name]")];
+    const urls  = [...document.querySelectorAll("input[data-tool-url]")];
+    const tools = names.map((n, i) => ({
+      name: n.value.trim(),
+      url: (urls[i]?.value || "").trim()
+    })).filter(t => t.name || t.url);
+    return tools;
+  }
+
+  function addTool(){
+    const cfg = loadCfg();
+    cfg.tools = cfg.tools || [];
+    cfg.tools.push({name:"", url:""});
+    saveCfg(cfg);
+    fillSetup();
+  }
+  function removeTool(idx){
+    const cfg = loadCfg();
+    cfg.tools = (cfg.tools || []).filter((_, i) => i !== idx);
+    saveCfg(cfg);
+    fillSetup();
+  }
+
+  function saveConfig(){
+    const cfg = loadCfg();
+
+    cfg.contactsText = document.getElementById("contactsText").value.trim();
+    cfg.contactsBlock = document.getElementById("contactsBlock").value.trim();
+
+    cfg.links = cfg.links || {};
+    cfg.links.digitalsale = document.getElementById("link_digitalsale").value.trim();
+    cfg.links.contenuti  = document.getElementById("link_contenuti").value.trim();
+    cfg.links.acquisizione = document.getElementById("link_acquisizione").value.trim();
+    cfg.links.sop01 = document.getElementById("link_sop01").value.trim();
+    cfg.links.prompts = document.getElementById("link_prompts").value.trim();
+    cfg.links.lead = document.getElementById("link_lead").value.trim();
+
+    // ✅ assicuriamoci che "promozione" non rientri più
+    if ("promozione" in cfg.links) delete cfg.links.promozione;
+
+    cfg.tools = collectToolsFromEditor();
+
+    saveCfg(cfg);
+    closeSetup();
+    renderCards();
+    alert("Config salvata ✅");
+  }
+
+  // Export / import config
+  function exportConfig(){
+    const cfg = loadCfg();
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], {type:"application/json;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gestionale_config.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importConfig(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = () => {
+      const file = inp.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
         try{
-          const r = await saveToDrive();
-          if(r.ok){ setStatus("salvato ✅"); }
-          else{ setStatus("errore ❌"); alert("Errore salvataggio: " + (r.msg||"")); }
-        }finally{
-          lockButtons(false);
-        }
-      });
-    }
+          const cfg = JSON.parse(String(reader.result || ""));
+          // pulizia: se c'è promozione, la rimuoviamo
+          if (cfg?.links && "promozione" in cfg.links) delete cfg.links.promozione;
+          if (cfg?.links && !cfg.links.contenuti) cfg.links.contenuti = DEFAULT_CFG.links.contenuti;
 
-    if(loadBtn){
-      loadBtn.addEventListener("click", async ()=>{
-        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
-        lockButtons(true);
-        setStatus("caricamento…");
-        try{
-          const r = await loadFromDrive();
-          if(r.ok){
-            setStatus("caricato ✅ (ricarico UI)");
-            // Reload page to ensure all widgets pick up the restored localStorage
-            location.reload();
-          }else{
-            setStatus("errore ❌");
-            alert("Errore caricamento: " + (r.msg||""));
-          }
-        }finally{
-          lockButtons(false);
-        }
-      });
-    }
-
-    if(testBtn){
-      testBtn.addEventListener("click", async ()=>{
-        if(!getEndpoint()){ alert("Inserisci l’URL della Web App."); return; }
-        lockButtons(true);
-        setStatus("test…");
-        try{
-          const j = await postJson(getEndpoint(), { action:"ping" });
-          if(j && j.ok){ setStatus("ok ✅"); }
-          else{ setStatus("errore ❌"); alert("Test fallito: " + ((j && (j.msg||j.error||j.raw)) || "")); }
-        }finally{
-          lockButtons(false);
-        }
-      });
-    }
-  }
-
-  // Add-only monkeypatch: auto-save debounce on localStorage writes for tracked keys
-  let saveTimer = null;
-  const AUTO_SAVE_MS = 1500;
-
-  function shouldTrackKey(k){
-    if(!k) return false;
-    if(KEYS_EXACT.includes(k)) return true;
-    for(const p of KEY_PREFIXES){
-      if(k.startsWith(p)) return true;
-    }
-    return false;
-  }
-
-  function scheduleAutoSave(){
-    const url = getEndpoint();
-    if(!url) return;
-    if(saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(()=>{ saveToDrive().catch(()=>{}); }, AUTO_SAVE_MS);
-  }
-
-  try{
-    const _setItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = function(k,v){
-      _setItem.apply(this, arguments);
-      try{
-        if(this === localStorage && shouldTrackKey(k)){
-          scheduleAutoSave();
-        }
-      }catch(e){}
-    };
-  }catch(e){}
-
-  window.addEventListener("DOMContentLoaded", renderUI);
-})();
-</script>
-
-
-<!-- IMPLEMENTA: precompila URL Web App Drive se mancante -->
-<script>
-(function(){
-  try{
-    const K = "sop_drive_webapp_url_v1";
-    const current = (localStorage.getItem(K)||"").trim();
-    if(!current){
-      localStorage.setItem(K, "https://script.google.com/macros/s/AKfycbxRe3MMKfBlqDbkxMq63ULttvJ3ma5-W_nNZDt4MXFYjcNDUMGzV8jE6XaJ2wZWo8iP/exec");
-    }
-  }catch(e){}
-})();
-</script>
-
-
-<!-- IMPLEMENTA: FIX Drive Sync - evita blocco su "salvataggio" (no preflight CORS + timeout + stop autosave loop) -->
-<script>
-(function(){
-  // Override postJson used by Drive Sync by re-defining a global helper and patching fetch calls via window.__SOP_POSTJSON
-  // This block is additive and does not modify existing code.
-  const DRIVE_ENDPOINT_KEY = "sop_drive_webapp_url_v1";
-  const DRIVE_LASTSYNC_KEY = "sop_drive_last_sync_v1";
-
-  function getEndpoint(){
-    return (localStorage.getItem(DRIVE_ENDPOINT_KEY)||"").trim();
-  }
-
-  // No-headers POST (text/plain) to avoid CORS preflight against Apps Script
-  async function postJsonNoPreflight(url, body, timeoutMs){
-    const controller = new AbortController();
-    const t = setTimeout(()=>controller.abort(), timeoutMs || 12000);
-    try{
-      const res = await fetch(url, {
-        method: "POST",
-        // IMPORTANT: do NOT set Content-Type header -> avoids OPTIONS preflight
-        body: JSON.stringify(body),
-        signal: controller.signal
-      });
-      const txt = await res.text();
-      try{ return JSON.parse(txt); }catch(e){ return { ok:false, raw:txt }; }
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  // Patch Storage.setItem again with a guard so Drive Sync internal keys won't trigger auto-save recursion
-  try{
-    const _setItem2 = Storage.prototype.setItem;
-    let guard = 0;
-
-    function isDriveInternalKey(k){
-      return (k === DRIVE_ENDPOINT_KEY) || (k === DRIVE_LASTSYNC_KEY);
-    }
-
-    Storage.prototype.setItem = function(k,v){
-      _setItem2.apply(this, arguments);
-      try{
-        if(this === localStorage){
-          if(isDriveInternalKey(k)) return;
-          // if Drive Sync auto-save exists, it may be scheduled elsewhere; prevent rapid recursion during sync writes
-          if(guard > 0) return;
-        }
-      }catch(e){}
-    };
-
-    // Expose a helper to let other blocks temporarily pause triggers
-    window.__SOP_DRIVE_SYNC_GUARD = {
-      enter: ()=>{ guard++; },
-      exit: ()=>{ guard = Math.max(0, guard-1); }
-    };
-  }catch(e){}
-
-  // Add working buttons if old ones get stuck (rebind click with the no-preflight function)
-  function rebindButtons(){
-    const saveBtn = document.getElementById("driveSaveBtn");
-    const loadBtn = document.getElementById("driveLoadBtn");
-    const testBtn = document.getElementById("driveTestBtn");
-    const status = document.getElementById("driveSyncStatus");
-
-    function setStatus(txt){
-      if(status) status.innerHTML = 'Stato: <b>' + txt + '</b>';
-    }
-    function lock(lockit){
-      if(saveBtn) saveBtn.disabled = !!lockit;
-      if(loadBtn) loadBtn.disabled = !!lockit;
-      if(testBtn) testBtn.disabled = !!lockit;
-    }
-
-    if(testBtn){
-      testBtn.addEventListener("click", async function(){
-        const url = getEndpoint();
-        if(!url){ alert("Inserisci l’URL della Web App."); return; }
-        lock(true); setStatus("test…");
-        try{
-          const j = await postJsonNoPreflight(url, { action:"ping" }, 12000);
-          if(j && j.ok) setStatus("ok ✅");
-          else { setStatus("errore ❌"); alert("Test fallito: " + ((j && (j.msg||j.error||j.raw)) || "")); }
+          saveCfg(cfg);
+          fillSetup();
+          renderCards();
+          alert("Config importata ✅");
         }catch(e){
-          setStatus("errore ❌");
-          alert("Test fallito (timeout o blocco CORS).");
-        }finally{ lock(false); }
-      }, {capture:true});
-    }
-
-    if(saveBtn){
-      saveBtn.addEventListener("click", async function(){
-        const url = getEndpoint();
-        if(!url){ alert("Inserisci l’URL della Web App."); return; }
-        lock(true); setStatus("salvataggio…");
-        try{
-          // Collect data from localStorage similarly to main block (best-effort, additive)
-          const KEYS_EXACT = ["sop_dashboard_v1","sop_leads_v1","sop_clients_v1","sop_active_client_v1","weekly_social_planner_v1"];
-          const KEY_PREFIXES = ["sop_client_notes_"];
-          const data = {};
-          KEYS_EXACT.forEach(k=>{ const v = localStorage.getItem(k); if(v!==null) data[k]=v; });
-          for(let i=0;i<localStorage.length;i++){
-            const k = localStorage.key(i);
-            if(!k) continue;
-            for(const p of KEY_PREFIXES){
-              if(k.startsWith(p)){
-                const v = localStorage.getItem(k);
-                if(v!==null) data[k]=v;
-                break;
-              }
-            }
-          }
-
-          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.enter();
-          const j = await postJsonNoPreflight(url, { action:"save", data:data }, 20000);
-          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
-
-          if(j && j.ok){
-            try{ localStorage.setItem(DRIVE_LASTSYNC_KEY, new Date().toISOString()); }catch(e){}
-            setStatus("salvato ✅");
-          }else{
-            setStatus("errore ❌");
-            alert("Errore salvataggio: " + ((j && (j.msg||j.error||j.raw)) || ""));
-          }
-        }catch(e){
-          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
-          setStatus("errore ❌");
-          alert("Errore salvataggio (timeout o blocco CORS).");
-        }finally{ lock(false); }
-      }, {capture:true});
-    }
-
-    if(loadBtn){
-      loadBtn.addEventListener("click", async function(){
-        const url = getEndpoint();
-        if(!url){ alert("Inserisci l’URL della Web App."); return; }
-        lock(true); setStatus("caricamento…");
-        try{
-          const j = await postJsonNoPreflight(url, { action:"load" }, 20000);
-          if(j && j.ok && j.data){
-            if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.enter();
-            Object.keys(j.data).forEach(k=>{
-              try{ if(typeof j.data[k]==="string") localStorage.setItem(k, j.data[k]); }catch(e){}
-            });
-            if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
-            try{ localStorage.setItem(DRIVE_LASTSYNC_KEY, new Date().toISOString()); }catch(e){}
-            setStatus("caricato ✅ (ricarico UI)");
-            location.reload();
-          }else{
-            setStatus("errore ❌");
-            alert("Errore caricamento: " + ((j && (j.msg||j.error||j.raw)) || ""));
-          }
-        }catch(e){
-          if(window.__SOP_DRIVE_SYNC_GUARD) window.__SOP_DRIVE_SYNC_GUARD.exit();
-          setStatus("errore ❌");
-          alert("Errore caricamento (timeout o blocco CORS).");
-        }finally{ lock(false); }
-      }, {capture:true});
-    }
+          alert("File non valido.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    inp.click();
   }
 
-  window.addEventListener("DOMContentLoaded", function(){
-    // Delay to ensure the original sync UI exists
-    setTimeout(rebindButtons, 50);
-  });
-})();
-</script>
+  // Placeholder footer buttons
+  function openStats(){ alert("Stats: se vuoi, qui possiamo aggiungere un pannello KPI in futuro."); }
+  function openQuickAdd(){ alert("Nuovo: qui possiamo aggiungere 'Nuovo cliente / nuovo contenuto / nuovo task'."); }
+  function openTasks(){ alert("Task: qui possiamo integrare una checklist globale cross-clienti."); }
 
+  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m])); }
+  function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+  // init
+  document.getElementById("today").textContent =
+    new Date().toLocaleDateString("it-IT",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+  if(!localStorage.getItem(CFG_KEY)) saveCfg(structuredClone(DEFAULT_CFG));
+  renderCards();
+</script>
 </body>
 </html>
